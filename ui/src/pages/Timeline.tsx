@@ -2,52 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, CalendarIcon, UsersIcon, FilterIcon, PlusIcon, LockIcon, ImageIcon, MusicIcon, FileTextIcon } from 'lucide-react';
 export function Timeline() {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
+  const { id } = useParams<{ id: string }>();
   const [filter, setFilter] = useState<string>('all');
-  // Mock data
-  const event = {
-    id,
-    title: 'Summer Beach Trip 2023',
-    date: '2023-07-15',
-    coverImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-    collaborators: [{
-      id: '1',
-      name: 'You',
-      avatar: 'https://i.pravatar.cc/150?img=1'
-    }, {
-      id: '2',
-      name: 'Alex Kim',
-      avatar: 'https://i.pravatar.cc/150?img=2'
-    }, {
-      id: '3',
-      name: 'Sarah Johnson',
-      avatar: 'https://i.pravatar.cc/150?img=3'
-    }, {
-      id: '4',
-      name: 'Miguel Rodriguez',
-      avatar: 'https://i.pravatar.cc/150?img=4'
-    }, {
-      id: '5',
-      name: 'Tara Wilson',
-      avatar: 'https://i.pravatar.cc/150?img=5'
-    }]
-  };
-  const [timelineItems, setTimelineItems] = useState([]);
+  const [event, setEvent] = useState<any | null>(null);
+  const [timelineItems, setTimelineItems] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    (async () => {
-      const res = await fetch('/api/timeline');
-      const data = await res.json();
-      setTimelineItems(data);
-    })();
-  }, []);
+    const fetchTimeline = async () => {
+      try {
+        setError(null);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        const res = await fetch(`${baseUrl}/capsule/${id}`);
+        if (!res.ok) throw new Error('Failed to load timeline');
+        const data = await res.json();
+        setEvent(data);
+        setTimelineItems(Array.isArray(data) ? data : data.items || []);
+      } catch (err: any) {
+        setError(err.message || 'An error occurred');
+      }
+    };
+    fetchTimeline();
+  }, [id]);
+  if (error) {
+    return <div className="p-6 text-red-500">{error}</div>;
+  }
   return <div className="pb-6">
       {/* Event Header */}
       <div className="h-48 md:h-64 -mx-4 md:-mx-6 mb-4 bg-cover bg-center relative" style={{
-      backgroundImage: `url(${event.coverImage})`
+      backgroundImage: `url(${event?.coverImage || ''})`
     }}>
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20 flex flex-col justify-end p-4 md:p-6">
           <Link to="/" className="inline-flex items-center text-white mb-auto">
@@ -55,13 +38,13 @@ export function Timeline() {
             Back to Events
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            {event.title}
+            {event?.title}
           </h1>
           <div className="flex items-center text-white/80 space-x-4">
             <div className="flex items-center">
               <CalendarIcon className="w-4 h-4 mr-2" />
               <span>
-                {new Date(event.date).toLocaleDateString(undefined, {
+                {event?.date && new Date(event.date).toLocaleDateString(undefined, {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -70,7 +53,7 @@ export function Timeline() {
             </div>
             <div className="flex items-center">
               <UsersIcon className="w-4 h-4 mr-2" />
-              <span>{event.collaborators.length} Collaborators</span>
+              <span>{event?.collaborators?.length ?? 0} Collaborators</span>
             </div>
           </div>
         </div>
@@ -78,7 +61,7 @@ export function Timeline() {
       {/* Collaborator Avatars */}
       <div className="flex items-center mb-6">
         <div className="flex -space-x-2 mr-4">
-          {event.collaborators.slice(0, 5).map(collaborator => <div key={collaborator.id} className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 overflow-hidden">
+          {event?.collaborators?.slice(0, 5).map(collaborator => <div key={collaborator.id} className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 overflow-hidden">
               <img src={collaborator.avatar} alt={collaborator.name} className="w-full h-full object-cover" />
             </div>)}
         </div>

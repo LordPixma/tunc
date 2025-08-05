@@ -97,7 +97,9 @@ export default {
       try {
         await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
       } catch (err) {
+
         return errorResponse('failed to store file', 500);
+
       }
 
       const bucketName = (env.MEDIA_BUCKET as any).bucketName || (env.MEDIA_BUCKET as any).name || '';

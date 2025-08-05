@@ -1,0 +1,12 @@
+{
+  "name": "tunc-worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@slack/webhook": "^7.0.5"
+  },
+  "scripts": {
+    "test": "echo \"No tests\""
+  }
+}

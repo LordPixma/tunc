@@ -6,8 +6,12 @@ compatibility_flags = ["nodejs_compat"]
 [workers.notify]
 main = "src/notify.ts"
 
+[[workers.notify.queues.producers]]
+binding = "NOTIFY_DLQ"
+queue = "tunc_notify_dlq"
+
 # TODO: Set your Cloudflare account ID before deploying
-# account_id = "your-account-id"
+account_id = "1e54c42267499cd9093c467c8b5517d1"
 
 [[d1_databases]]
 binding = "DB"
@@ -15,7 +19,9 @@ database_name = "tunc_db"
 database_id = "315bf476-04e5-401a-af8f-8eefc1b8a8dc"
 
 [[durable_objects]]
-bindings = [ { name = "TIMELINE_DO", class_name = "Timeline" } ]
+binding = "TIMELINE_DO"
+class_name = "TimelineDO"
+
 
 
 [[queues.producers]]
