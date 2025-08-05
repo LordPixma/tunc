@@ -58,8 +58,7 @@ export default {
     // POST /upload/:capsuleId -> upload an attachment
     if (req.method === 'POST' && parts[0] === 'upload' && parts.length === 2) {
       const capsuleId = parts[1];
-      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-      if (!uuidRegex.test(capsuleId)) {
+      if (!isValidUUID(capsuleId)) {
         return new Response('Invalid capsuleId', { status: 400 });
       }
 
