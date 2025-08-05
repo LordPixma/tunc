@@ -1,13 +1,13 @@
 export interface Env {
   DB: D1Database;
-  R2_BUCKET: R2Bucket;
-  QUEUE: Queue<any>;
+  MEDIA_BUCKET: R2Bucket;
+  NOTIFY_QUEUE: Queue<any>;
 }
 
 interface TimelineItem {
   id: string;
   message: string;
-  openingDate?: string;
+ openingDate?: string;
   attachments?: string[];
   created_at: string;
 }
@@ -27,7 +27,7 @@ function isValidDate(date: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(Date.parse(date));
 }
 
-export class Timeline {
+export class TimelineDO {
   state: DurableObjectState;
   env: Env;
 
