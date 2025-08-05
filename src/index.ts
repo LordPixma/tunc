@@ -2,6 +2,8 @@
 // Provides REST endpoints for creating capsules, adding items and retrieving timelines.
 // This worker delegates stateful operations to a Durable Object defined in src/timeline.ts
 
+export { TimelineDO } from "./timeline";
+
 interface Env {
   TIMELINE_DO: DurableObjectNamespace;
   MEDIA_BUCKET: R2Bucket;
