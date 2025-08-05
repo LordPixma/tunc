@@ -12,7 +12,7 @@ database_name = "tunc_db"
 database_id = "315bf476-04e5-401a-af8f-8eefc1b8a8dc"
 
 [[durable_objects]]
-bindings = [ { name = "TIMELINE_DO", class_name = "TimelineDO" } ]
+bindings = [ { name = "TIMELINE_DO", class_name = "Timeline" } ]
 
 [[queues.producers]]
 binding = "NOTIFY_QUEUE"
