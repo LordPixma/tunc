@@ -1,7 +1,7 @@
 export interface Env {
   DB: D1Database;
   R2_BUCKET: R2Bucket;
-  QUEUE: Queue<any>;
+  NOTIFY_QUEUE: Queue;
 }
 
 interface TimelineItem {
@@ -10,6 +10,7 @@ interface TimelineItem {
   openingDate?: string;
   attachments?: string[];
   created_at: string;
+  notified?: boolean;
 }
 
 export class Timeline {
@@ -19,6 +20,44 @@ export class Timeline {
   constructor(state: DurableObjectState, env: Env) {
     this.state = state;
     this.env = env;
+  }
+
+  private async checkUnlocks(items?: TimelineItem[]): Promise<void> {
+    if (!items) {
+      items = (await this.state.storage.get("items")) || [];
+    }
+
+    const now = Date.now();
+    let updated = false;
+
+    for (const item of items) {
+      if (item.openingDate && !item.notified) {
+        const openTime = new Date(item.openingDate).getTime();
+        if (openTime <= now) {
+          const payload = { capsuleId: this.state.id.toString(), itemId: item.id };
+          await this.env.NOTIFY_QUEUE.send(payload);
+          console.log("Enqueued notification", payload);
+          item.notified = true;
+          updated = true;
+        }
+      }
+    }
+
+    if (updated) {
+      await this.state.storage.put("items", items);
+    }
+
+    const next = items
+      .filter(i => i.openingDate && !i.notified)
+      .map(i => new Date(i.openingDate as string).getTime())
+      .filter(t => t > now);
+
+    if (next.length > 0) {
+      const earliest = Math.min(...next);
+      await this.state.storage.setAlarm(earliest);
+    } else {
+      await this.state.storage.deleteAlarm();
+    }
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -40,6 +79,8 @@ export class Timeline {
       items.push(item);
       await this.state.storage.put("items", items);
 
+      await this.checkUnlocks(items);
+
       return new Response(JSON.stringify(item), {
         status: 201,
         headers: { "Content-Type": "application/json" }
@@ -49,6 +90,7 @@ export class Timeline {
     // Handle retrieving the timeline
     if (request.method === "GET" && (pathname === "/" || pathname === "")) {
       const items: TimelineItem[] = (await this.state.storage.get("items")) || [];
+      await this.checkUnlocks(items);
       return new Response(JSON.stringify(items), {
         status: 200,
         headers: { "Content-Type": "application/json" }
@@ -73,5 +115,9 @@ export class Timeline {
 
     // If no route matches, return a 404 response
     return new Response("Not found", { status: 404 });
+  }
+
+  async alarm(): Promise<void> {
+    await this.checkUnlocks();
   }
 }
