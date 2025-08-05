@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2025-08-05"
 compatibility_flags = ["nodejs_compat"]
 
+[workers.notify]
+main = "src/notify.ts"
+
 # TODO: Set your Cloudflare account ID before deploying
 # account_id = "your-account-id"
 
@@ -17,6 +20,10 @@ bindings = [ { name = "TIMELINE_DO", class_name = "TimelineDO" } ]
 [[queues.producers]]
 binding = "NOTIFY_QUEUE"
 queue = "tunc_notify"
+
+[[queues.consumers]]
+queue = "tunc_notify"
+worker = "notify"
 
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
