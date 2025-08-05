@@ -85,7 +85,11 @@ export default {
 
       const objectId = crypto.randomUUID();
       const key = `${capsuleId}/${objectId}`;
-      await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
+      try {
+        await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
+      } catch (err) {
+        return errorResponse('failed to store file', 500);
+      }
 
       const bucketName = (env.MEDIA_BUCKET as any).bucketName || (env.MEDIA_BUCKET as any).name || '';
       const baseUrl = bucketName ? `https://${bucketName}.r2.dev` : '';
