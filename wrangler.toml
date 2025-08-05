@@ -6,6 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 [workers.notify]
 main = "src/notify.ts"
 
+[[workers.notify.queues.producers]]
+binding = "NOTIFY_DLQ"
+queue = "tunc_notify_dlq"
+
 # TODO: Set your Cloudflare account ID before deploying
 # account_id = "your-account-id"
 
