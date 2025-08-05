@@ -34,7 +34,10 @@ Tunc is a serverless multimedia event platform built entirely on the Cloudflare 
    # deploy the API to Workers
    wrangler deploy
 
-   # optional: deploy the front‑end built from magicpatterns (see /ui directory when exported)
+   # build the UI assets into ../public for deployment
+   cd ui
+   npm install
+   npm run build:ui
    ```
 
 ## API Routes
