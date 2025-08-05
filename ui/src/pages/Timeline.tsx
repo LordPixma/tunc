@@ -39,11 +39,11 @@ export function Timeline() {
   const [timelineItems, setTimelineItems] = useState([]);
   useEffect(() => {
     (async () => {
-      const res = await fetch('/api/timeline');
+      const res = await fetch(`/capsule/${id}`);
       const data = await res.json();
-      setTimelineItems(data);
+      setTimelineItems(Array.isArray(data) ? data : data.items || []);
     })();
-  }, []);
+  }, [id]);
   return <div className="pb-6">
       {/* Event Header */}
       <div className="h-48 md:h-64 -mx-4 md:-mx-6 mb-4 bg-cover bg-center relative" style={{
