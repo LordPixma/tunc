@@ -2,6 +2,8 @@
 // Provides REST endpoints for creating capsules, adding items and retrieving timelines.
 // This worker delegates stateful operations to a Durable Object defined in src/timeline.ts
 
+export { TimelineDO } from "./timeline";
+
 interface Env {
   TIMELINE_DO: DurableObjectNamespace;
   MEDIA_BUCKET: R2Bucket;
@@ -51,6 +53,45 @@ export default {
         return errorResponse('failed to initialize capsule', 500);
       }
       return jsonResponse({ id }, 201);
+    }
+
+    // POST /upload/:capsuleId -> upload an attachment
+    if (req.method === 'POST' && parts[0] === 'upload' && parts.length === 2) {
+      const capsuleId = parts[1];
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      if (!uuidRegex.test(capsuleId)) {
+        return new Response('Invalid capsuleId', { status: 400 });
+      }
+
+      const contentType = req.headers.get('content-type') || '';
+      let data: ArrayBuffer;
+      let fileType: string | undefined;
+
+      if (contentType.includes('multipart/form-data')) {
+        const form = await req.formData();
+        const file = form.get('file');
+        if (!(file instanceof File)) {
+          return new Response('File not provided', { status: 400 });
+        }
+        data = await file.arrayBuffer();
+        fileType = file.type || undefined;
+      } else {
+        data = await req.arrayBuffer();
+        fileType = req.headers.get('content-type') || undefined;
+        if (!data || data.byteLength === 0) {
+          return new Response('No data', { status: 400 });
+        }
+      }
+
+      const objectId = crypto.randomUUID();
+      const key = `${capsuleId}/${objectId}`;
+      await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
+
+      const bucketName = (env.MEDIA_BUCKET as any).bucketName || (env.MEDIA_BUCKET as any).name || '';
+      const baseUrl = bucketName ? `https://${bucketName}.r2.dev` : '';
+      const url = baseUrl ? `${baseUrl}/${key}` : key;
+
+      return new Response(JSON.stringify({ url }), { status: 201, headers: { 'Content-Type': 'application/json' } });
     }
 
     // POST /capsule/:id/item -> add an item to a capsule timeline

@@ -7,7 +7,7 @@ export interface Env {
 interface TimelineItem {
   id: string;
   message: string;
- openingDate?: string;
+  openingDate?: string;
   attachments?: string[];
   created_at: string;
 }
