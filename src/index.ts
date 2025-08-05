@@ -104,7 +104,14 @@ export default {
       try {
         const forwardUrl = new URL(req.url);
         forwardUrl.pathname = '/item';
-        const forwardRequest = new Request(forwardUrl.toString(), req);
+        const init: RequestInit = {
+          method: req.method,
+          headers: req.headers,
+        };
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          init.body = req.body;
+        }
+        const forwardRequest = new Request(forwardUrl.toString(), init);
         return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to add item', 500);
@@ -121,7 +128,10 @@ export default {
       try {
         const forwardUrl = new URL(req.url);
         forwardUrl.pathname = '/';
-        const forwardRequest = new Request(forwardUrl.toString(), req);
+        const forwardRequest = new Request(forwardUrl.toString(), {
+          method: req.method,
+          headers: req.headers
+        });
         return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to retrieve capsule', 500);
