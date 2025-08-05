@@ -1,0 +1,24 @@
+name = "tunc"
+main = "src/index.ts"
+compatibility_date = "2025-08-05"
+compatibility_flags = ["nodejs_compat"]
+
+# TODO: Set your Cloudflare account ID before deploying
+# account_id = "your-account-id"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tunc_db"
+database_id = "your-d1-database-id"
+
+[[durable_objects]]
+bindings = [ { name = "TIMELINE_DO", class_name = "TimelineDO" } ]
+
+[[queues.producers]]
+binding = "NOTIFY_QUEUE"
+queue_name = "tunc_notify"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "tunc-media"
+preview_bucket_name = "tunc-media-preview"
