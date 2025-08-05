@@ -23,6 +23,7 @@ binding = "TIMELINE_DO"
 class_name = "TimelineDO"
 
 
+
 [[queues.producers]]
 binding = "NOTIFY_QUEUE"
 queue = "tunc_notify"
