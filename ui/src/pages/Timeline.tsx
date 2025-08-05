@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, CalendarIcon, UsersIcon, FilterIcon, PlusIcon, LockIcon, ImageIcon, MusicIcon, FileTextIcon } from 'lucide-react';
 export function Timeline() {
@@ -36,66 +36,14 @@ export function Timeline() {
       avatar: 'https://i.pravatar.cc/150?img=5'
     }]
   };
-  const timelineItems = [{
-    id: '1',
-    type: 'photo',
-    author: {
-      id: '1',
-      name: 'You',
-      avatar: 'https://i.pravatar.cc/150?img=1'
-    },
-    content: {
-      image: 'https://images.unsplash.com/photo-1520454974749-611b7248ffdb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-      caption: 'First day at the beach!'
-    },
-    timestamp: '2023-07-15T10:30:00Z',
-    isLocked: false
-  }, {
-    id: '2',
-    type: 'text',
-    author: {
-      id: '2',
-      name: 'Alex Kim',
-      avatar: 'https://i.pravatar.cc/150?img=2'
-    },
-    content: {
-      text: "What an amazing sunset today! Can't wait for tomorrow's adventures."
-    },
-    timestamp: '2023-07-15T19:45:00Z',
-    isLocked: false
-  }, {
-    id: '3',
-    type: 'photo',
-    author: {
-      id: '3',
-      name: 'Sarah Johnson',
-      avatar: 'https://i.pravatar.cc/150?img=3'
-    },
-    content: {
-      image: 'https://images.unsplash.com/photo-1414609245224-afa02bfb3fda?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-      caption: 'Beach bonfire night!'
-    },
-    timestamp: '2023-07-15T21:15:00Z',
-    isLocked: true,
-    lockInfo: {
-      type: 'date',
-      unlockDate: '2023-10-15'
-    }
-  }, {
-    id: '4',
-    type: 'audio',
-    author: {
-      id: '4',
-      name: 'Miguel Rodriguez',
-      avatar: 'https://i.pravatar.cc/150?img=4'
-    },
-    content: {
-      audioTitle: 'Waves crashing at sunset',
-      duration: '0:45'
-    },
-    timestamp: '2023-07-16T08:20:00Z',
-    isLocked: false
-  }];
+  const [timelineItems, setTimelineItems] = useState([]);
+  useEffect(() => {
+    (async () => {
+      const res = await fetch('/api/timeline');
+      const data = await res.json();
+      setTimelineItems(data);
+    })();
+  }, []);
   return <div className="pb-6">
       {/* Event Header */}
       <div className="h-48 md:h-64 -mx-4 md:-mx-6 mb-4 bg-cover bg-center relative" style={{
