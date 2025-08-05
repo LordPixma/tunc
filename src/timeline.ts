@@ -1,7 +1,7 @@
 export interface Env {
   DB: D1Database;
-  R2_BUCKET: R2Bucket;
-  QUEUE: Queue<any>;
+  MEDIA_BUCKET: R2Bucket;
+  NOTIFY_QUEUE: Queue<any>;
 }
 
 interface TimelineItem {
@@ -12,7 +12,7 @@ interface TimelineItem {
   created_at: string;
 }
 
-export class Timeline {
+export class TimelineDO {
   state: DurableObjectState;
   env: Env;
 
