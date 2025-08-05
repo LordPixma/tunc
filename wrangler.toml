@@ -11,7 +11,7 @@ binding = "NOTIFY_DLQ"
 queue = "tunc_notify_dlq"
 
 # TODO: Set your Cloudflare account ID before deploying
-# account_id = "your-account-id"
+account_id = "1e54c42267499cd9093c467c8b5517d1"
 
 [[d1_databases]]
 binding = "DB"
