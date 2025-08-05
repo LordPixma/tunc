@@ -63,6 +63,12 @@ export default {
         return new Response('Invalid capsuleId', { status: 400 });
       }
 
+      const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+      const contentLengthHeader = req.headers.get('content-length');
+      if (contentLengthHeader && parseInt(contentLengthHeader, 10) > MAX_UPLOAD_SIZE) {
+        return new Response('File too large', { status: 413 });
+      }
+
       const contentType = req.headers.get('content-type') || '';
       let data: ArrayBuffer;
       let fileType: string | undefined;
@@ -83,9 +89,17 @@ export default {
         }
       }
 
+      if (data.byteLength > MAX_UPLOAD_SIZE) {
+        return new Response('File too large', { status: 413 });
+      }
+
       const objectId = crypto.randomUUID();
       const key = `${capsuleId}/${objectId}`;
-      await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
+      try {
+        await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
+      } catch (err) {
+        return new Response('failed to store file', { status: 500 });
+      }
 
       const bucketName = (env.MEDIA_BUCKET as any).bucketName || (env.MEDIA_BUCKET as any).name || '';
       const baseUrl = bucketName ? `https://${bucketName}.r2.dev` : '';

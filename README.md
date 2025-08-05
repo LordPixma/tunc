@@ -46,7 +46,7 @@ The Worker exposes a small REST API:
 | `POST /capsule`          | Create a new timeline. Body: `{ "name": "Event Name" }`. Returns `{ id }`. |
 | `POST /capsule/:id/item` | Add an item to a timeline. Delegates to the Durable Object. Body: `{ "message": "...", "openingDate": "YYYY-MM-DD" }`. |
 | `GET /capsule/:id`       | Retrieve the full timeline (list of items). |
-| `POST /upload/:capsuleId` | Upload a file for a capsule. Accepts binary or `multipart/form-data` body and returns `{ url }` referencing the stored object. |
+| `POST /upload/:capsuleId` | Upload a file for a capsule (max 10 MB). Accepts binary or `multipart/form-data` body and returns `{ url }` referencing the stored object. |
 
 See `src/index.ts` and `src/timeline.ts` for implementation details.
 
