@@ -11,6 +11,21 @@ interface Env {
   NOTIFY_QUEUE: Queue;
 }
 
+function jsonResponse(data: any, status: number = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+function errorResponse(message: string, status: number = 400): Response {
+  return jsonResponse({ error: message }, status);
+}
+
+function isValidUUID(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
@@ -19,16 +34,25 @@ export default {
     // POST /capsule -> create new capsule (timeline)
     if (req.method === 'POST' && parts[0] === 'capsule' && parts.length === 1) {
       const body = await req.json().catch(() => ({}));
+      const name = (body.name ?? '').trim();
+      if (!name) {
+        return errorResponse('name is required', 400);
+      }
       const id = crypto.randomUUID();
-      const name = body.name || '';
-      // Store metadata in D1
-      await env.DB.prepare(
-        'INSERT INTO capsules(id, name, created_at) VALUES(?1, ?2, datetime("now"))'
-      ).bind(id, name).run();
-      // Initialize timeline durable object
-      const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(id));
-      await stub.fetch('https://tunc.internal/init');
-      return new Response(JSON.stringify({ id }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      try {
+        await env.DB.prepare(
+          'INSERT INTO capsules(id, name, created_at) VALUES(?1, ?2, datetime("now"))'
+        ).bind(id, name).run();
+      } catch (err) {
+        return errorResponse('failed to store capsule', 500);
+      }
+      try {
+        const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(id));
+        await stub.fetch('https://tunc.internal/init');
+      } catch (err) {
+        return errorResponse('failed to initialize capsule', 500);
+      }
+      return jsonResponse({ id }, 201);
     }
 
     // POST /upload/:capsuleId -> upload an attachment
@@ -73,15 +97,29 @@ export default {
     // POST /capsule/:id/item -> add an item to a capsule timeline
     if (req.method === 'POST' && parts[0] === 'capsule' && parts.length === 3 && parts[2] === 'item') {
       const capsuleId = parts[1];
+      if (!isValidUUID(capsuleId)) {
+        return errorResponse('invalid capsule id', 400);
+      }
       const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId));
-      return await stub.fetch(req);
+      try {
+        return await stub.fetch(req);
+      } catch (err) {
+        return errorResponse('failed to add item', 500);
+      }
     }
 
     // GET /capsule/:id -> retrieve timeline
     if (req.method === 'GET' && parts[0] === 'capsule' && parts.length === 2) {
       const capsuleId = parts[1];
+      if (!isValidUUID(capsuleId)) {
+        return errorResponse('invalid capsule id', 400);
+      }
       const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId));
-      return await stub.fetch(req);
+      try {
+        return await stub.fetch(req);
+      } catch (err) {
+        return errorResponse('failed to retrieve capsule', 500);
+      }
     }
 
     return new Response('Not Found', { status: 404 });
