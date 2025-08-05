@@ -39,6 +39,10 @@ export class TimelineDO {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
+    const capsuleId = request.headers.get('X-Capsule-ID');
+    if (!capsuleId) {
+      return errorResponse('missing capsule id', 400);
+    }
 
     // Handle adding a new item to the timeline
     if (request.method === "POST" && pathname === "/item") {
@@ -59,17 +63,14 @@ export class TimelineDO {
       const created_at = new Date().toISOString();
       const item: TimelineItem = { id, message, openingDate, attachments, created_at };
 
-      let items: TimelineItem[] = [];
       try {
-        items = (await this.state.storage.get("items")) || [];
+        await this.env.DB.prepare(
+          'INSERT INTO items (id, capsule_id, message, attachments, opening_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
+        )
+          .bind(id, capsuleId, message, attachments ? JSON.stringify(attachments) : null, openingDate, created_at)
+          .run();
       } catch (err) {
-        return errorResponse('storage error', 500);
-      }
-      items.push(item);
-      try {
-        await this.state.storage.put("items", items);
-      } catch (err) {
-        return errorResponse('storage error', 500);
+        return errorResponse('db error', 500);
       }
 
       return jsonResponse(item, 201);
@@ -78,10 +79,19 @@ export class TimelineDO {
     // Handle retrieving the timeline
     if (request.method === "GET" && (pathname === "/" || pathname === "")) {
       try {
-        const items: TimelineItem[] = (await this.state.storage.get("items")) || [];
+        const { results } = await this.env.DB.prepare(
+          'SELECT id, message, attachments, opening_date as openingDate, created_at FROM items WHERE capsule_id = ?1 ORDER BY created_at'
+        ).bind(capsuleId).all();
+        const items = results.map((row: any) => ({
+          id: row.id,
+          message: row.message,
+          attachments: row.attachments ? JSON.parse(row.attachments) : undefined,
+          openingDate: row.openingDate || undefined,
+          created_at: row.created_at,
+        }));
         return jsonResponse(items, 200);
       } catch (err) {
-        return errorResponse('storage error', 500);
+        return errorResponse('db error', 500);
       }
     }
 
@@ -89,22 +99,16 @@ export class TimelineDO {
     if (request.method === "DELETE" && pathname.startsWith("/item/")) {
       const parts = pathname.split("/");
       const itemId = parts[2];
-      let items: TimelineItem[] = [];
       try {
-        items = (await this.state.storage.get("items")) || [];
-      } catch (err) {
-        return errorResponse('storage error', 500);
-      }
-      const index = items.findIndex(item => item.id === itemId);
-
-      if (index >= 0) {
-        items.splice(index, 1);
-        try {
-          await this.state.storage.put("items", items);
-        } catch (err) {
-          return errorResponse('storage error', 500);
+        const res = await this.env.DB.prepare(
+          'DELETE FROM items WHERE capsule_id = ?1 AND id = ?2'
+        ).bind(capsuleId, itemId).run();
+        const changes = (res.meta as any)?.changes ?? 0;
+        if (changes > 0) {
+          return new Response(null, { status: 204 });
         }
-        return new Response(null, { status: 204 });
+      } catch (err) {
+        return errorResponse('db error', 500);
       }
 
       return errorResponse('Not found', 404);
