@@ -102,7 +102,10 @@ export default {
       }
       const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId));
       try {
-        return await stub.fetch(req);
+        const forwardUrl = new URL(req.url);
+        forwardUrl.pathname = '/item';
+        const forwardRequest = new Request(forwardUrl.toString(), req);
+        return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to add item', 500);
       }
@@ -116,7 +119,10 @@ export default {
       }
       const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId));
       try {
-        return await stub.fetch(req);
+        const forwardUrl = new URL(req.url);
+        forwardUrl.pathname = '/';
+        const forwardRequest = new Request(forwardUrl.toString(), req);
+        return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to retrieve capsule', 500);
       }
