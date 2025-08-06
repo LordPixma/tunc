@@ -59,10 +59,12 @@ describe('Worker endpoints', () => {
         idFromName: vi.fn().mockReturnValue('id'),
         get: vi.fn().mockReturnValue({ fetch: doFetch }),
       },
+      API_TOKEN: 'token',
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
       body: JSON.stringify({ name: 'My Event' }),
+      headers: { Authorization: 'Bearer token' },
     });
     const res = await worker.fetch(req, env, {} as any);
     expect(res.status).toBe(201);
@@ -79,14 +81,16 @@ describe('Worker endpoints', () => {
       DB: {},
       TIMELINE_DO: {},
       NOTIFY_QUEUE: {},
+      API_TOKEN: 'token',
     };
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
     const body = new Uint8Array([1, 2, 3]);
     const req = new Request(`https://example.com/upload/${capsuleId}`, {
       method: 'POST',
       headers: {
-        'content-type': 'application/octet-stream',
+        'content-type': 'image/png',
         'content-length': String(body.length),
+        'Authorization': 'Bearer token',
       },
       body,
     });
@@ -101,13 +105,13 @@ describe('Worker endpoints', () => {
 describe('Timeline Durable Object', () => {
   it('adds and retrieves items', async () => {
     const db = new MemoryDB();
-    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {} };
+    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
     const timeline = new TimelineDO({} as any, env);
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
 
     const addReq = new Request('https://example.com/item', {
       method: 'POST',
-      headers: { 'X-Capsule-ID': capsuleId },
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
       body: JSON.stringify({ message: 'hello' }),
     });
     const addRes = await timeline.fetch(addReq);
@@ -115,12 +119,28 @@ describe('Timeline Durable Object', () => {
 
     const getReq = new Request('https://example.com/', {
       method: 'GET',
-      headers: { 'X-Capsule-ID': capsuleId },
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
     });
     const getRes = await timeline.fetch(getReq);
     expect(getRes.status).toBe(200);
     const items = await getRes.json();
     expect(items).toHaveLength(1);
     expect(items[0].message).toBe('hello');
+  });
+
+  it('validates item id on delete', async () => {
+    const db = new MemoryDB();
+    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
+    const timeline = new TimelineDO({} as any, env);
+    const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
+
+    const delReq = new Request('https://example.com/item/not-a-uuid', {
+      method: 'DELETE',
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
+    });
+    const delRes = await timeline.fetch(delReq);
+    expect(delRes.status).toBe(400);
+    const err = await delRes.json();
+    expect(err.error).toBe('invalid item id');
   });
 });
