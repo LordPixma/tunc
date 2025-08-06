@@ -97,16 +97,17 @@ export default {
       try {
         await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
       } catch (err) {
-
         return errorResponse('failed to store file', 500);
-
       }
 
       const bucketName = (env.MEDIA_BUCKET as any).bucketName || (env.MEDIA_BUCKET as any).name || '';
       const baseUrl = bucketName ? `https://${bucketName}.r2.dev` : '';
       const url = baseUrl ? `${baseUrl}/${key}` : key;
 
-      return new Response(JSON.stringify({ url }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ url }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // POST /capsule/:id/item -> add an item to a capsule timeline
