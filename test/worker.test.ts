@@ -55,11 +55,11 @@ describe('Worker endpoints', () => {
       DB: db,
       MEDIA_BUCKET: {},
       NOTIFY_QUEUE: {},
-      API_TOKEN: 'token',
       TIMELINE_DO: {
         idFromName: vi.fn().mockReturnValue('id'),
         get: vi.fn().mockReturnValue({ fetch: doFetch }),
       },
+      API_TOKEN: 'token',
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
@@ -74,6 +74,30 @@ describe('Worker endpoints', () => {
     expect(data.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(db.prepare).toHaveBeenCalled();
     expect(doFetch).toHaveBeenCalled();
+  });
+
+  it('rejects overly long capsule names', async () => {
+    const db = {
+      prepare: vi.fn(),
+    };
+    const env: any = {
+      DB: db,
+      MEDIA_BUCKET: {},
+      NOTIFY_QUEUE: {},
+      TIMELINE_DO: {},
+      API_TOKEN: 'token',
+    };
+    const longName = 'a'.repeat(101);
+    const req = new Request('https://example.com/capsule', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer token' },
+      body: JSON.stringify({ name: longName }),
+    });
+    const res = await worker.fetch(req, env, {} as any);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('name must be 100 characters or fewer');
+    expect(db.prepare).not.toHaveBeenCalled();
   });
 
   it('uploads a file to R2', async () => {
@@ -120,7 +144,7 @@ describe('Timeline Durable Object', () => {
       },
       body: JSON.stringify({
         message: 'hello',
-        attachments: [`${capsuleId}/${attachmentId}`]
+        attachments: [`${capsuleId}/${attachmentId}`],
       }),
     });
     const addRes = await timeline.fetch(addReq);
@@ -157,7 +181,7 @@ describe('Timeline Durable Object', () => {
       },
       body: JSON.stringify({
         message: 'hi',
-        attachments: [`${otherCapsuleId}/${attachmentId}`]
+        attachments: [`${otherCapsuleId}/${attachmentId}`],
       }),
     });
     const addRes = await timeline.fetch(addReq);

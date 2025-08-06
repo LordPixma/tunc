@@ -89,6 +89,9 @@ export default {
       if (!name) {
         return errorResponse('name is required', 400);
       }
+      if (name.length > 100) {
+        return errorResponse('name must be 100 characters or fewer', 400);
+      }
       const id = crypto.randomUUID();
       try {
         await env.DB.prepare(
