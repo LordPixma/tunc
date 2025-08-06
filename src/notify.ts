@@ -22,24 +22,30 @@ export default {
     }
 
     const webhook = new IncomingWebhook(env.SLACK_WEBHOOK_URL);
+    const promises: Promise<void>[] = [];
 
     for (const message of batch.messages) {
-      try {
-        console.log('Handling notification', message.body);
-        const text =
-          typeof message.body === 'string'
-            ? message.body
-            : JSON.stringify(message.body);
-        await webhook.send({ text });
-      } catch (err) {
-        console.error('Failed to process notification', err);
-        if ((message.attempts ?? 0) >= MAX_ATTEMPTS) {
-          console.error('Moving message to dead-letter queue');
-          await env.NOTIFY_DLQ.send(message.body);
-        } else {
-          message.retry();
+      const promise = (async () => {
+        try {
+          console.log('Handling notification', message.body);
+          const text =
+            typeof message.body === 'string'
+              ? message.body
+              : JSON.stringify(message.body);
+          await webhook.send({ text });
+        } catch (err) {
+          console.error('Failed to process notification', err);
+          if ((message.attempts ?? 0) >= MAX_ATTEMPTS) {
+            console.error('Moving message to dead-letter queue');
+            await env.NOTIFY_DLQ.send(message.body);
+          } else {
+            message.retry();
+          }
         }
-      }
+      })();
+      promises.push(promise);
     }
+
+    ctx.waitUntil(Promise.all(promises));
   }
 };
