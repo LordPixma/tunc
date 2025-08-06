@@ -63,8 +63,10 @@ describe('Worker endpoints', () => {
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
+      headers: {
+        'Authorization': 'Bearer token',
+      },
       body: JSON.stringify({ name: 'My Event' }),
-      headers: { Authorization: 'Bearer token' },
     });
     const res = await worker.fetch(req, env, {} as any);
     expect(res.status).toBe(201);
@@ -111,7 +113,10 @@ describe('Timeline Durable Object', () => {
 
     const addReq = new Request('https://example.com/item', {
       method: 'POST',
-      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
+      headers: {
+        'X-Capsule-ID': capsuleId,
+        'Authorization': 'Bearer token',
+      },
       body: JSON.stringify({ message: 'hello' }),
     });
     const addRes = await timeline.fetch(addReq);
@@ -119,7 +124,10 @@ describe('Timeline Durable Object', () => {
 
     const getReq = new Request('https://example.com/', {
       method: 'GET',
-      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
+      headers: {
+        'X-Capsule-ID': capsuleId,
+        'Authorization': 'Bearer token',
+      },
     });
     const getRes = await timeline.fetch(getReq);
     expect(getRes.status).toBe(200);
@@ -136,7 +144,10 @@ describe('Timeline Durable Object', () => {
 
     const delReq = new Request('https://example.com/item/not-a-uuid', {
       method: 'DELETE',
-      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
+      headers: {
+        'X-Capsule-ID': capsuleId,
+        'Authorization': 'Bearer token',
+      },
     });
     const delRes = await timeline.fetch(delReq);
     expect(delRes.status).toBe(400);
