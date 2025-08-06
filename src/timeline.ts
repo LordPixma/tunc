@@ -1,3 +1,10 @@
+import type {
+  D1Database,
+  R2Bucket,
+  Queue,
+  DurableObjectState
+} from '@cloudflare/workers-types';
+
 export interface Env {
   DB: D1Database;
   MEDIA_BUCKET: R2Bucket;

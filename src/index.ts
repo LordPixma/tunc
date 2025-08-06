@@ -2,6 +2,14 @@
 // Provides REST endpoints for creating capsules, adding items and retrieving timelines.
 // This worker delegates stateful operations to a Durable Object defined in src/timeline.ts
 
+import type {
+  DurableObjectNamespace,
+  R2Bucket,
+  D1Database,
+  Queue,
+  ExecutionContext
+} from '@cloudflare/workers-types';
+
 export { TimelineDO } from "./timeline";
 
 interface Env {
@@ -90,7 +98,7 @@ export default {
         return errorResponse('failed to store capsule', 500);
       }
       try {
-        const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(id));
+        const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(id)) as any;
         const initReq = new Request('https://tunc.internal/init', {
           headers: {
             'Authorization': `Bearer ${env.API_TOKEN}`,
@@ -182,7 +190,7 @@ export default {
       if (!isValidUUID(capsuleId)) {
         return errorResponse('invalid capsule id', 400);
       }
-      const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId));
+      const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId)) as any;
       try {
         const forwardUrl = new URL(req.url);
         forwardUrl.pathname = '/item';
@@ -201,7 +209,7 @@ export default {
       if (!isValidUUID(capsuleId)) {
         return errorResponse('invalid capsule id', 400);
       }
-      const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId));
+      const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(capsuleId)) as any;
       try {
         const forwardUrl = new URL(req.url);
         forwardUrl.pathname = '/';

@@ -1,4 +1,5 @@
 import { IncomingWebhook } from '@slack/webhook';
+import type { Queue, MessageBatch, ExecutionContext } from '@cloudflare/workers-types';
 
 interface Env {
   NOTIFY_DLQ: Queue;
