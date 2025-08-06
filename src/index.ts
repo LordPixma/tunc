@@ -113,8 +113,14 @@ export default {
 
       const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
       const contentLengthHeader = req.headers.get('content-length');
-      if (contentLengthHeader && parseInt(contentLengthHeader, 10) > MAX_UPLOAD_SIZE) {
-        return new Response('File too large', { status: 413 });
+      if (contentLengthHeader) {
+        const contentLength = parseInt(contentLengthHeader, 10);
+        if (isNaN(contentLength)) {
+          return errorResponse('Invalid content-length', 400);
+        }
+        if (contentLength > MAX_UPLOAD_SIZE) {
+          return new Response('File too large', { status: 413 });
+        }
       }
 
       const contentType = req.headers.get('content-type') || '';
