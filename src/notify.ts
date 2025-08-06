@@ -1,15 +1,32 @@
+import { IncomingWebhook } from '@slack/webhook';
+
 interface Env {
-  NOTIFY_QUEUE: Queue;
+  NOTIFY_DLQ: Queue;
+  SLACK_WEBHOOK_URL: string;
 }
+
+const MAX_ATTEMPTS = 3;
 
 export default {
   async queue(batch: MessageBatch<any>, env: Env, ctx: ExecutionContext): Promise<void> {
+    const webhook = new IncomingWebhook(env.SLACK_WEBHOOK_URL);
+
     for (const message of batch.messages) {
       try {
         console.log('Handling notification', message.body);
-        // Placeholder: send email or other notification
+        const text =
+          typeof message.body === 'string'
+            ? message.body
+            : JSON.stringify(message.body);
+        await webhook.send({ text });
       } catch (err) {
         console.error('Failed to process notification', err);
+        if ((message.attempts ?? 0) >= MAX_ATTEMPTS) {
+          console.error('Moving message to dead-letter queue');
+          await env.NOTIFY_DLQ.send(message.body);
+        } else {
+          message.retry();
+        }
       }
     }
   }
