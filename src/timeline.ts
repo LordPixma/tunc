@@ -2,6 +2,7 @@ export interface Env {
   DB: D1Database;
   MEDIA_BUCKET: R2Bucket;
   NOTIFY_QUEUE: Queue<any>;
+  API_TOKEN: string;
 }
 
 interface TimelineItem {
@@ -27,6 +28,21 @@ function isValidDate(date: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(Date.parse(date));
 }
 
+const MAX_MESSAGE_LENGTH = 1000;
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_LENGTH = 2048;
+
+function isValidAttachment(ref: string): boolean {
+  try {
+    const url = new URL(ref);
+    return url.protocol === 'https:';
+  } catch {
+    const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+    const re = new RegExp(`^${uuid}/${uuid}$`, 'i');
+    return re.test(ref);
+  }
+}
+
 export class TimelineDO {
   state: DurableObjectState;
   env: Env;
@@ -37,6 +53,13 @@ export class TimelineDO {
   }
 
   async fetch(request: Request): Promise<Response> {
+    if (!this.env.DB) {
+      return errorResponse('DB binding is missing', 500);
+    }
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader !== `Bearer ${this.env.API_TOKEN}`) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const url = new URL(request.url);
     const pathname = url.pathname;
     const capsuleId = request.headers.get('X-Capsule-ID');
@@ -54,9 +77,30 @@ export class TimelineDO {
       if (!message) {
         return errorResponse('message is required', 400);
       }
-
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        return errorResponse(`message exceeds ${MAX_MESSAGE_LENGTH} characters`, 400);
+      }
       if (openingDate && !isValidDate(openingDate)) {
         return errorResponse('invalid openingDate format', 400);
+      }
+      if (attachments) {
+        if (!Array.isArray(attachments)) {
+          return errorResponse('attachments must be an array', 400);
+        }
+        if (attachments.length > MAX_ATTACHMENTS) {
+          return errorResponse(`too many attachments (max ${MAX_ATTACHMENTS})`, 400);
+        }
+        for (const ref of attachments) {
+          if (typeof ref !== 'string') {
+            return errorResponse('attachments must be strings', 400);
+          }
+          if (ref.length > MAX_ATTACHMENT_LENGTH) {
+            return errorResponse('attachment reference too long', 400);
+          }
+          if (!isValidAttachment(ref)) {
+            return errorResponse(`invalid attachment reference: ${ref}`, 400);
+          }
+        }
       }
 
       const id = crypto.randomUUID();
