@@ -63,7 +63,9 @@ describe('Worker endpoints', () => {
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer token' },
+      headers: {
+        'Authorization': 'Bearer token',
+      },
       body: JSON.stringify({ name: 'My Event' }),
     });
     const res = await worker.fetch(req, env, {} as any);
@@ -111,7 +113,10 @@ describe('Timeline Durable Object', () => {
 
     const addReq = new Request('https://example.com/item', {
       method: 'POST',
-      headers: { 'X-Capsule-ID': capsuleId, 'Authorization': 'Bearer token' },
+      headers: {
+        'X-Capsule-ID': capsuleId,
+        'Authorization': 'Bearer token',
+      },
       body: JSON.stringify({ message: 'hello' }),
     });
     const addRes = await timeline.fetch(addReq);
@@ -119,12 +124,34 @@ describe('Timeline Durable Object', () => {
 
     const getReq = new Request('https://example.com/', {
       method: 'GET',
-      headers: { 'X-Capsule-ID': capsuleId, 'Authorization': 'Bearer token' },
+      headers: {
+        'X-Capsule-ID': capsuleId,
+        'Authorization': 'Bearer token',
+      },
     });
     const getRes = await timeline.fetch(getReq);
     expect(getRes.status).toBe(200);
     const items = await getRes.json();
     expect(items).toHaveLength(1);
     expect(items[0].message).toBe('hello');
+  });
+
+  it('validates item id on delete', async () => {
+    const db = new MemoryDB();
+    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
+    const timeline = new TimelineDO({} as any, env);
+    const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
+
+    const delReq = new Request('https://example.com/item/not-a-uuid', {
+      method: 'DELETE',
+      headers: {
+        'X-Capsule-ID': capsuleId,
+        'Authorization': 'Bearer token',
+      },
+    });
+    const delRes = await timeline.fetch(delReq);
+    expect(delRes.status).toBe(400);
+    const err = await delRes.json();
+    expect(err.error).toBe('invalid item id');
   });
 });

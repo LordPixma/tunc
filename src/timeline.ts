@@ -168,6 +168,10 @@ export class TimelineDO {
     if (request.method === "DELETE" && pathname.startsWith("/item/")) {
       const parts = pathname.split("/");
       const itemId = parts[2];
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!itemId || !uuidPattern.test(itemId)) {
+        return errorResponse('invalid item id', 400);
+      }
       try {
         const res = await this.env.DB.prepare(
           'DELETE FROM items WHERE capsule_id = ?1 AND id = ?2'
