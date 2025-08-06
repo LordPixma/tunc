@@ -58,9 +58,14 @@ export default {
     // POST /upload/:capsuleId -> upload an attachment
     if (req.method === 'POST' && parts[0] === 'upload' && parts.length === 2) {
       const capsuleId = parts[1];
-      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-      if (!uuidRegex.test(capsuleId)) {
+      if (!isValidUUID(capsuleId)) {
         return new Response('Invalid capsuleId', { status: 400 });
+      }
+
+      const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+      const contentLengthHeader = req.headers.get('content-length');
+      if (contentLengthHeader && parseInt(contentLengthHeader, 10) > MAX_UPLOAD_SIZE) {
+        return new Response('File too large', { status: 413 });
       }
 
       const contentType = req.headers.get('content-type') || '';
@@ -83,15 +88,26 @@ export default {
         }
       }
 
+      if (data.byteLength > MAX_UPLOAD_SIZE) {
+        return new Response('File too large', { status: 413 });
+      }
+
       const objectId = crypto.randomUUID();
       const key = `${capsuleId}/${objectId}`;
-      await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
+      try {
+        await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
+      } catch (err) {
+        return errorResponse('failed to store file', 500);
+      }
 
       const bucketName = (env.MEDIA_BUCKET as any).bucketName || (env.MEDIA_BUCKET as any).name || '';
       const baseUrl = bucketName ? `https://${bucketName}.r2.dev` : '';
       const url = baseUrl ? `${baseUrl}/${key}` : key;
 
-      return new Response(JSON.stringify({ url }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ url }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // POST /capsule/:id/item -> add an item to a capsule timeline
@@ -104,14 +120,8 @@ export default {
       try {
         const forwardUrl = new URL(req.url);
         forwardUrl.pathname = '/item';
-        const init: RequestInit = {
-          method: req.method,
-          headers: req.headers,
-        };
-        if (req.method !== 'GET' && req.method !== 'HEAD') {
-          init.body = req.body;
-        }
-        const forwardRequest = new Request(forwardUrl.toString(), init);
+        const forwardRequest = new Request(forwardUrl.toString(), req);
+        forwardRequest.headers.set('X-Capsule-ID', capsuleId);
         return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to add item', 500);
@@ -128,10 +138,8 @@ export default {
       try {
         const forwardUrl = new URL(req.url);
         forwardUrl.pathname = '/';
-        const forwardRequest = new Request(forwardUrl.toString(), {
-          method: req.method,
-          headers: req.headers
-        });
+        const forwardRequest = new Request(forwardUrl.toString(), req);
+        forwardRequest.headers.set('X-Capsule-ID', capsuleId);
         return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to retrieve capsule', 500);
