@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": false,
+    "types": ["vitest/globals"],
+    "allowJs": true
+  },
+  "include": ["src", "test"]
+}
