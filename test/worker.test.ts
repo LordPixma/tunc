@@ -59,9 +59,11 @@ describe('Worker endpoints', () => {
         idFromName: vi.fn().mockReturnValue('id'),
         get: vi.fn().mockReturnValue({ fetch: doFetch }),
       },
+      API_TOKEN: 'token',
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
+      headers: { Authorization: 'Bearer token' },
       body: JSON.stringify({ name: 'My Event' }),
     });
     const res = await worker.fetch(req, env, {} as any);
@@ -70,6 +72,7 @@ describe('Worker endpoints', () => {
     expect(data.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(db.prepare).toHaveBeenCalled();
     expect(doFetch).toHaveBeenCalled();
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
   it('uploads a file to R2', async () => {
@@ -79,14 +82,16 @@ describe('Worker endpoints', () => {
       DB: {},
       TIMELINE_DO: {},
       NOTIFY_QUEUE: {},
+      API_TOKEN: 'token',
     };
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
     const body = new Uint8Array([1, 2, 3]);
     const req = new Request(`https://example.com/upload/${capsuleId}`, {
       method: 'POST',
       headers: {
-        'content-type': 'application/octet-stream',
+        'content-type': 'image/png',
         'content-length': String(body.length),
+        Authorization: 'Bearer token',
       },
       body,
     });
@@ -95,32 +100,58 @@ describe('Worker endpoints', () => {
     const data = await res.json();
     expect(data.url.startsWith(`https://bucket.r2.dev/${capsuleId}/`)).toBe(true);
     expect(put).toHaveBeenCalled();
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 });
 
 describe('Timeline Durable Object', () => {
   it('adds and retrieves items', async () => {
     const db = new MemoryDB();
-    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {} };
+    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
     const timeline = new TimelineDO({} as any, env);
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
 
     const addReq = new Request('https://example.com/item', {
       method: 'POST',
-      headers: { 'X-Capsule-ID': capsuleId },
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
       body: JSON.stringify({ message: 'hello' }),
     });
     const addRes = await timeline.fetch(addReq);
     expect(addRes.status).toBe(201);
+    expect(addRes.headers.get('Access-Control-Allow-Origin')).toBe('*');
 
     const getReq = new Request('https://example.com/', {
       method: 'GET',
-      headers: { 'X-Capsule-ID': capsuleId },
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer token' },
     });
     const getRes = await timeline.fetch(getReq);
     expect(getRes.status).toBe(200);
     const items = await getRes.json();
     expect(items).toHaveLength(1);
     expect(items[0].message).toBe('hello');
+    expect(getRes.headers.get('Access-Control-Allow-Origin')).toBe('*');
+  });
+
+  it('handles OPTIONS requests with CORS headers', async () => {
+    const env: any = { DB: {}, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
+    const timeline = new TimelineDO({} as any, env);
+    const res = await timeline.fetch(new Request('https://example.com/', { method: 'OPTIONS' }));
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+  });
+});
+
+describe('CORS', () => {
+  it('responds to OPTIONS with headers in worker', async () => {
+    const env: any = {
+      TIMELINE_DO: {},
+      MEDIA_BUCKET: {},
+      DB: {},
+      NOTIFY_QUEUE: {},
+      API_TOKEN: 'token',
+    };
+    const res = await worker.fetch(new Request('https://example.com/capsule', { method: 'OPTIONS' }), env, {} as any);
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 });
