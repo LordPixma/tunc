@@ -26,6 +26,36 @@ function isValidUUID(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'video/mp4',
+  'application/pdf'
+]);
+
+async function readStreamLimited(stream: ReadableStream<Uint8Array>, maxSize: number): Promise<Uint8Array> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxSize) {
+      throw new Error('File too large');
+    }
+    chunks.push(value);
+  }
+  const result = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return result;
+}
+
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
@@ -69,8 +99,8 @@ export default {
       }
 
       const contentType = req.headers.get('content-type') || '';
-      let data: ArrayBuffer;
-      let fileType: string | undefined;
+      let data: Uint8Array;
+      let fileType: string;
 
       if (contentType.includes('multipart/form-data')) {
         const form = await req.formData();
@@ -78,18 +108,35 @@ export default {
         if (!(file instanceof File)) {
           return new Response('File not provided', { status: 400 });
         }
-        data = await file.arrayBuffer();
-        fileType = file.type || undefined;
+        fileType = file.type || '';
+        if (!ALLOWED_MIME_TYPES.has(fileType)) {
+          return new Response('Unsupported file type', { status: 415 });
+        }
+        if (file.size > MAX_UPLOAD_SIZE) {
+          return new Response('File too large', { status: 413 });
+        }
+        try {
+          data = await readStreamLimited(file.stream(), MAX_UPLOAD_SIZE);
+        } catch (err) {
+          return new Response('File too large', { status: 413 });
+        }
       } else {
-        data = await req.arrayBuffer();
-        fileType = req.headers.get('content-type') || undefined;
+        fileType = req.headers.get('content-type') || '';
+        if (!ALLOWED_MIME_TYPES.has(fileType)) {
+          return new Response('Unsupported file type', { status: 415 });
+        }
+        const bodyStream = req.body;
+        if (!bodyStream) {
+          return new Response('No data', { status: 400 });
+        }
+        try {
+          data = await readStreamLimited(bodyStream, MAX_UPLOAD_SIZE);
+        } catch (err) {
+          return new Response('File too large', { status: 413 });
+        }
         if (!data || data.byteLength === 0) {
           return new Response('No data', { status: 400 });
         }
-      }
-
-      if (data.byteLength > MAX_UPLOAD_SIZE) {
-        return new Response('File too large', { status: 413 });
       }
 
       const objectId = crypto.randomUUID();
