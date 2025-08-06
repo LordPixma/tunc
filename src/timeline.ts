@@ -2,6 +2,7 @@ export interface Env {
   DB: D1Database;
   MEDIA_BUCKET: R2Bucket;
   NOTIFY_QUEUE: Queue<any>;
+  API_TOKEN: string;
 }
 
 interface TimelineItem {
@@ -37,6 +38,11 @@ export class TimelineDO {
   }
 
   async fetch(request: Request): Promise<Response> {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader !== `Bearer ${this.env.API_TOKEN}`) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
     const url = new URL(request.url);
     const pathname = url.pathname;
     const capsuleId = request.headers.get('X-Capsule-ID');

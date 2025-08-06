@@ -9,6 +9,7 @@ interface Env {
   MEDIA_BUCKET: R2Bucket;
   DB: D1Database;
   NOTIFY_QUEUE: Queue;
+  API_TOKEN: string;
 }
 
 function jsonResponse(data: any, status: number = 200): Response {
@@ -28,6 +29,11 @@ function isValidUUID(id: string): boolean {
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader !== `Bearer ${env.API_TOKEN}`) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean);
 
@@ -48,7 +54,13 @@ export default {
       }
       try {
         const stub = env.TIMELINE_DO.get(env.TIMELINE_DO.idFromName(id));
-        await stub.fetch('https://tunc.internal/init');
+        const initReq = new Request('https://tunc.internal/init', {
+          headers: {
+            'Authorization': `Bearer ${env.API_TOKEN}`,
+            'X-Capsule-ID': id,
+          }
+        });
+        await stub.fetch(initReq);
       } catch (err) {
         return errorResponse('failed to initialize capsule', 500);
       }
@@ -122,6 +134,7 @@ export default {
         forwardUrl.pathname = '/item';
         const forwardRequest = new Request(forwardUrl.toString(), req);
         forwardRequest.headers.set('X-Capsule-ID', capsuleId);
+        forwardRequest.headers.set('Authorization', `Bearer ${env.API_TOKEN}`);
         return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to add item', 500);
@@ -140,6 +153,7 @@ export default {
         forwardUrl.pathname = '/';
         const forwardRequest = new Request(forwardUrl.toString(), req);
         forwardRequest.headers.set('X-Capsule-ID', capsuleId);
+        forwardRequest.headers.set('Authorization', `Bearer ${env.API_TOKEN}`);
         return await stub.fetch(forwardRequest);
       } catch (err) {
         return errorResponse('failed to retrieve capsule', 500);
