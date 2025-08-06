@@ -39,16 +39,17 @@ const MAX_MESSAGE_LENGTH = 1000;
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_LENGTH = 2048;
 
-function isValidAttachment(ref: string): boolean {
-  try {
-    const url = new URL(ref);
-    return url.protocol === 'https:';
-  } catch {
-    const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-    const re = new RegExp(`^${uuid}/${uuid}$`, 'i');
-    return re.test(ref);
+  function isValidAttachment(ref: string): boolean {
+    try {
+      const url = new URL(ref);
+      return url.protocol === 'https:';
+    } catch (err) {
+      console.error('invalid attachment reference', err);
+      const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+      const re = new RegExp(`^${uuid}/${uuid}$`, 'i');
+      return re.test(ref);
+    }
   }
-}
 
 export class TimelineDO {
   state: DurableObjectState;
@@ -118,22 +119,23 @@ export class TimelineDO {
       const created_at = new Date().toISOString();
       const item: TimelineItem = { id, message, openingDate, attachments, created_at };
 
-      try {
-        await this.env.DB.prepare(
-          'INSERT INTO items (id, capsule_id, message, attachments, opening_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
-        )
-          .bind(
-            id,
-            capsuleId,
-            message,
-            attachments ? JSON.stringify(attachments) : null,
-            openingDate,
-            created_at
+        try {
+          await this.env.DB.prepare(
+            'INSERT INTO items (id, capsule_id, message, attachments, opening_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
           )
-          .run();
-      } catch (err) {
-        return errorResponse('db error', 500);
-      }
+            .bind(
+              id,
+              capsuleId,
+              message,
+              attachments ? JSON.stringify(attachments) : null,
+              openingDate,
+              created_at
+            )
+            .run();
+        } catch (err) {
+          console.error('failed to insert timeline item', err);
+          return errorResponse('db error', 500);
+        }
 
       return jsonResponse(item, 201);
     }
@@ -157,6 +159,7 @@ export class TimelineDO {
 
         return jsonResponse(items, 200);
       } catch (err) {
+        console.error('failed to retrieve timeline', err);
         return errorResponse('db error', 500);
       }
     }
@@ -177,6 +180,7 @@ export class TimelineDO {
           return new Response(null, { status: 204 });
         }
       } catch (err) {
+        console.error('failed to delete item', err);
         return errorResponse('db error', 500);
       }
 
