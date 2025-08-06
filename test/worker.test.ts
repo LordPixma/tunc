@@ -55,11 +55,11 @@ describe('Worker endpoints', () => {
       DB: db,
       MEDIA_BUCKET: {},
       NOTIFY_QUEUE: {},
+      API_TOKEN: 'token',
       TIMELINE_DO: {
         idFromName: vi.fn().mockReturnValue('id'),
         get: vi.fn().mockReturnValue({ fetch: doFetch }),
       },
-      API_TOKEN: 'token',
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
@@ -105,11 +105,12 @@ describe('Worker endpoints', () => {
 });
 
 describe('Timeline Durable Object', () => {
-  it('adds and retrieves items', async () => {
+  it('adds and retrieves items with attachments', async () => {
     const db = new MemoryDB();
     const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
     const timeline = new TimelineDO({} as any, env);
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
+    const attachmentId = '11111111-1111-4111-8111-111111111111';
 
     const addReq = new Request('https://example.com/item', {
       method: 'POST',
@@ -117,7 +118,10 @@ describe('Timeline Durable Object', () => {
         'X-Capsule-ID': capsuleId,
         'Authorization': 'Bearer token',
       },
-      body: JSON.stringify({ message: 'hello' }),
+      body: JSON.stringify({
+        message: 'hello',
+        attachments: [`${capsuleId}/${attachmentId}`]
+      }),
     });
     const addRes = await timeline.fetch(addReq);
     expect(addRes.status).toBe(201);
@@ -134,6 +138,30 @@ describe('Timeline Durable Object', () => {
     const items = await getRes.json();
     expect(items).toHaveLength(1);
     expect(items[0].message).toBe('hello');
+    expect(items[0].attachments).toEqual([`${capsuleId}/${attachmentId}`]);
+  });
+
+  it('rejects attachments referencing other capsules', async () => {
+    const db = new MemoryDB();
+    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
+    const timeline = new TimelineDO({} as any, env);
+    const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
+    const otherCapsuleId = '223e4567-e89b-12d3-a456-426614174000';
+    const attachmentId = '22222222-2222-4222-8222-222222222222';
+
+    const addReq = new Request('https://example.com/item', {
+      method: 'POST',
+      headers: {
+        'X-Capsule-ID': capsuleId,
+        'Authorization': 'Bearer token',
+      },
+      body: JSON.stringify({
+        message: 'hi',
+        attachments: [`${otherCapsuleId}/${attachmentId}`]
+      }),
+    });
+    const addRes = await timeline.fetch(addReq);
+    expect(addRes.status).toBe(400);
   });
 
   it('validates item id on delete', async () => {
