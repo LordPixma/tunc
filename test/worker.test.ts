@@ -59,9 +59,11 @@ describe('Worker endpoints', () => {
         idFromName: vi.fn().mockReturnValue('id'),
         get: vi.fn().mockReturnValue({ fetch: doFetch }),
       },
+      API_TOKEN: 'secret',
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
+      headers: { Authorization: 'Bearer secret' },
       body: JSON.stringify({ name: 'My Event' }),
     });
     const res = await worker.fetch(req, env, {} as any);
@@ -79,14 +81,16 @@ describe('Worker endpoints', () => {
       DB: {},
       TIMELINE_DO: {},
       NOTIFY_QUEUE: {},
+      API_TOKEN: 'secret',
     };
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
     const body = new Uint8Array([1, 2, 3]);
     const req = new Request(`https://example.com/upload/${capsuleId}`, {
       method: 'POST',
       headers: {
-        'content-type': 'application/octet-stream',
+        'content-type': 'image/png',
         'content-length': String(body.length),
+        Authorization: 'Bearer secret',
       },
       body,
     });
@@ -96,18 +100,56 @@ describe('Worker endpoints', () => {
     expect(data.url.startsWith(`https://bucket.r2.dev/${capsuleId}/`)).toBe(true);
     expect(put).toHaveBeenCalled();
   });
+
+  it('rejects unauthorized requests', async () => {
+    const env: any = {
+      DB: {},
+      MEDIA_BUCKET: {},
+      NOTIFY_QUEUE: {},
+      TIMELINE_DO: {},
+      API_TOKEN: 'secret',
+    };
+    const req = new Request('https://example.com/capsule', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Test' }),
+    });
+    const res = await worker.fetch(req, env, {} as any);
+    expect(res.status).toBe(401);
+    expect(await res.text()).toBe('Unauthorized');
+  });
+
+  it('rejects capsule creation with invalid payload', async () => {
+    const db = { prepare: vi.fn() };
+    const env: any = {
+      DB: db,
+      MEDIA_BUCKET: {},
+      NOTIFY_QUEUE: {},
+      TIMELINE_DO: {},
+      API_TOKEN: 'secret',
+    };
+    const req = new Request('https://example.com/capsule', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer secret' },
+      body: JSON.stringify({}),
+    });
+    const res = await worker.fetch(req, env, {} as any);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('name is required');
+    expect(db.prepare).not.toHaveBeenCalled();
+  });
 });
 
 describe('Timeline Durable Object', () => {
   it('adds and retrieves items', async () => {
     const db = new MemoryDB();
-    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {} };
+    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'secret' };
     const timeline = new TimelineDO({} as any, env);
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
 
     const addReq = new Request('https://example.com/item', {
       method: 'POST',
-      headers: { 'X-Capsule-ID': capsuleId },
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer secret' },
       body: JSON.stringify({ message: 'hello' }),
     });
     const addRes = await timeline.fetch(addReq);
@@ -115,12 +157,55 @@ describe('Timeline Durable Object', () => {
 
     const getReq = new Request('https://example.com/', {
       method: 'GET',
-      headers: { 'X-Capsule-ID': capsuleId },
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer secret' },
     });
     const getRes = await timeline.fetch(getReq);
     expect(getRes.status).toBe(200);
     const items = await getRes.json();
     expect(items).toHaveLength(1);
     expect(items[0].message).toBe('hello');
+  });
+
+  it('returns 404 when deleting a non-existent item', async () => {
+    const run = vi.fn().mockResolvedValue({ meta: { changes: 0 } });
+    const env: any = {
+      DB: { prepare: vi.fn().mockReturnValue({ bind: vi.fn().mockReturnValue({ run }) }) },
+      MEDIA_BUCKET: {},
+      NOTIFY_QUEUE: {},
+      API_TOKEN: 'secret',
+    };
+    const timeline = new TimelineDO({} as any, env);
+    const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
+    const itemId = 'e7c9cb43-2c3b-4dbe-b90d-394f4a6e8f1f';
+    const req = new Request(`https://example.com/item/${itemId}`, {
+      method: 'DELETE',
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer secret' },
+    });
+    const res = await timeline.fetch(req);
+    expect(res.status).toBe(404);
+    const data = await res.json();
+    expect(data.error).toBe('Not found');
+    expect(run).toHaveBeenCalled();
+  });
+
+  it('returns 500 when DB deletion fails', async () => {
+    const run = vi.fn().mockRejectedValue(new Error('fail'));
+    const env: any = {
+      DB: { prepare: vi.fn().mockReturnValue({ bind: vi.fn().mockReturnValue({ run }) }) },
+      MEDIA_BUCKET: {},
+      NOTIFY_QUEUE: {},
+      API_TOKEN: 'secret',
+    };
+    const timeline = new TimelineDO({} as any, env);
+    const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
+    const itemId = 'e7c9cb43-2c3b-4dbe-b90d-394f4a6e8f1f';
+    const req = new Request(`https://example.com/item/${itemId}`, {
+      method: 'DELETE',
+      headers: { 'X-Capsule-ID': capsuleId, Authorization: 'Bearer secret' },
+    });
+    const res = await timeline.fetch(req);
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('db error');
   });
 });
