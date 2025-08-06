@@ -53,13 +53,17 @@ export class TimelineDO {
   }
 
   async fetch(request: Request): Promise<Response> {
+    // Ensure the DB binding is present
     if (!this.env.DB) {
       return errorResponse('DB binding is missing', 500);
     }
+
+    // Authenticate
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${this.env.API_TOKEN}`) {
       return new Response('Unauthorized', { status: 401 });
     }
+
     const url = new URL(request.url);
     const pathname = url.pathname;
     const capsuleId = request.headers.get('X-Capsule-ID');
@@ -111,7 +115,14 @@ export class TimelineDO {
         await this.env.DB.prepare(
           'INSERT INTO items (id, capsule_id, message, attachments, opening_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
         )
-          .bind(id, capsuleId, message, attachments ? JSON.stringify(attachments) : null, openingDate, created_at)
+          .bind(
+            id,
+            capsuleId,
+            message,
+            attachments ? JSON.stringify(attachments) : null,
+            openingDate,
+            created_at
+          )
           .run();
       } catch (err) {
         return errorResponse('db error', 500);
@@ -125,7 +136,10 @@ export class TimelineDO {
       try {
         const { results } = await this.env.DB.prepare(
           'SELECT id, message, attachments, opening_date as openingDate, created_at FROM items WHERE capsule_id = ?1 ORDER BY created_at'
-        ).bind(capsuleId).all();
+        )
+        .bind(capsuleId)
+        .all();
+
         const items = results.map((row: any) => ({
           id: row.id,
           message: row.message,
@@ -133,6 +147,7 @@ export class TimelineDO {
           openingDate: row.openingDate || undefined,
           created_at: row.created_at,
         }));
+
         return jsonResponse(items, 200);
       } catch (err) {
         return errorResponse('db error', 500);
@@ -146,7 +161,10 @@ export class TimelineDO {
       try {
         const res = await this.env.DB.prepare(
           'DELETE FROM items WHERE capsule_id = ?1 AND id = ?2'
-        ).bind(capsuleId, itemId).run();
+        )
+        .bind(capsuleId, itemId)
+        .run();
+
         const changes = (res.meta as any)?.changes ?? 0;
         if (changes > 0) {
           return new Response(null, { status: 204 });

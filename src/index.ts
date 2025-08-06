@@ -59,6 +59,7 @@ async function readStreamLimited(stream: ReadableStream<Uint8Array>, maxSize: nu
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Validate required environment bindings
     const required: (keyof Env)[] = ['TIMELINE_DO', 'MEDIA_BUCKET', 'DB', 'NOTIFY_QUEUE', 'API_TOKEN'];
     const missing = required.filter((key) => !(env as any)[key]);
     if (missing.length > 0) {
@@ -167,9 +168,9 @@ export default {
 
       const bucketName = (env.MEDIA_BUCKET as any).bucketName || (env.MEDIA_BUCKET as any).name || '';
       const baseUrl = bucketName ? `https://${bucketName}.r2.dev` : '';
-      const url = baseUrl ? `${baseUrl}/${key}` : key;
+      const urlResponse = baseUrl ? `${baseUrl}/${key}` : key;
 
-      return new Response(JSON.stringify({ url }), {
+      return new Response(JSON.stringify({ url: urlResponse }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' }
       });

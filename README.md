@@ -44,7 +44,7 @@ The Worker exposes a small REST API:
 | Method & path            | Description                                 |
 |--------------------------|---------------------------------------------|
 | `POST /capsule`          | Create a new timeline. Body: `{ "name": "Event Name" }`. Returns `{ id }`. |
-| `POST /capsule/:id/item` | Add an item to a timeline. Delegates to the Durable Object. Body: `{ "message": "...", "openingDate": "YYYY-MM-DD" }`. |
+| `POST /capsule/:id/item` | Add an item to a timeline. Delegates to the Durable Object. Body: `{ "message": "...", "openingDate": "YYYY-MM-DD", "attachments": [] }`. Message max 1000 chars, up to 5 attachment URLs or `uuid/uuid` IDs. |
 | `GET /capsule/:id`       | Retrieve the full timeline (list of items). |
 | `POST /upload/:capsuleId` | Upload a file for a capsule (max 10 MB). Accepts binary or `multipart/form-data` body and returns `{ url }` referencing the stored object. |
 
