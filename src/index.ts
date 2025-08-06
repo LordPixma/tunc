@@ -87,6 +87,7 @@ export default {
           'INSERT INTO capsules(id, name, created_at) VALUES(?1, ?2, datetime("now"))'
         ).bind(id, name).run();
       } catch (err) {
+        console.error('failed to store capsule', err);
         return errorResponse('failed to store capsule', 500);
       }
       try {
@@ -99,6 +100,7 @@ export default {
         });
         await stub.fetch(initReq);
       } catch (err) {
+        console.error('failed to initialize capsule', err);
         return errorResponse('failed to initialize capsule', 500);
       }
       return jsonResponse({ id }, 201);
@@ -137,6 +139,7 @@ export default {
         try {
           data = await readStreamLimited(file.stream(), MAX_UPLOAD_SIZE);
         } catch (err) {
+          console.error('error reading multipart file stream', err);
           return new Response('File too large', { status: 413 });
         }
       } else {
@@ -151,6 +154,7 @@ export default {
         try {
           data = await readStreamLimited(bodyStream, MAX_UPLOAD_SIZE);
         } catch (err) {
+          console.error('error reading upload body', err);
           return new Response('File too large', { status: 413 });
         }
         if (!data || data.byteLength === 0) {
@@ -163,6 +167,7 @@ export default {
       try {
         await env.MEDIA_BUCKET.put(key, data, { httpMetadata: { contentType: fileType } });
       } catch (err) {
+        console.error('failed to store file', err);
         return errorResponse('failed to store file', 500);
       }
 
@@ -191,6 +196,7 @@ export default {
         forwardRequest.headers.set('Authorization', `Bearer ${env.API_TOKEN}`);
         return await stub.fetch(forwardRequest);
       } catch (err) {
+        console.error('failed to add item', err);
         return errorResponse('failed to add item', 500);
       }
     }
@@ -210,6 +216,7 @@ export default {
         forwardRequest.headers.set('Authorization', `Bearer ${env.API_TOKEN}`);
         return await stub.fetch(forwardRequest);
       } catch (err) {
+        console.error('failed to retrieve capsule', err);
         return errorResponse('failed to retrieve capsule', 500);
       }
     }
