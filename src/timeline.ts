@@ -32,14 +32,21 @@ const MAX_MESSAGE_LENGTH = 1000;
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_LENGTH = 2048;
 
-function isValidAttachment(ref: string): boolean {
+function isValidAttachment(ref: string, capsuleId: string): boolean {
   try {
     const url = new URL(ref);
     return url.protocol === 'https:';
   } catch {
     const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-    const re = new RegExp(`^${uuid}/${uuid}$`, 'i');
-    return re.test(ref);
+    const re = new RegExp(`^(${uuid})/(${uuid})$`, 'i');
+    const match = ref.match(re);
+    if (!match) {
+      return false;
+    }
+    if (match[1].toLowerCase() !== capsuleId.toLowerCase()) {
+      return false;
+    }
+    return true;
   }
 }
 
@@ -101,7 +108,7 @@ export class TimelineDO {
           if (ref.length > MAX_ATTACHMENT_LENGTH) {
             return errorResponse('attachment reference too long', 400);
           }
-          if (!isValidAttachment(ref)) {
+          if (!isValidAttachment(ref, capsuleId)) {
             return errorResponse(`invalid attachment reference: ${ref}`, 400);
           }
         }
