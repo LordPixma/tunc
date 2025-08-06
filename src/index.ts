@@ -28,6 +28,12 @@ function isValidUUID(id: string): boolean {
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const required: (keyof Env)[] = ['TIMELINE_DO', 'MEDIA_BUCKET', 'DB', 'NOTIFY_QUEUE'];
+    const missing = required.filter((key) => !(env as any)[key]);
+    if (missing.length > 0) {
+      return new Response(`Missing bindings: ${missing.join(', ')}`, { status: 500 });
+    }
+
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean);
 

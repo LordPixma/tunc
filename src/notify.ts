@@ -9,6 +9,17 @@ const MAX_ATTEMPTS = 3;
 
 export default {
   async queue(batch: MessageBatch<any>, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (!env.NOTIFY_DLQ) {
+      throw new Error('NOTIFY_DLQ queue binding is missing');
+    }
+    if (!env.SLACK_WEBHOOK_URL) {
+      console.error('SLACK_WEBHOOK_URL is not set; moving messages to dead-letter queue');
+      for (const message of batch.messages) {
+        await env.NOTIFY_DLQ.send(message.body);
+      }
+      return;
+    }
+
     const webhook = new IncomingWebhook(env.SLACK_WEBHOOK_URL);
 
     for (const message of batch.messages) {

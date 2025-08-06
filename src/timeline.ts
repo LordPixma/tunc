@@ -37,6 +37,9 @@ export class TimelineDO {
   }
 
   async fetch(request: Request): Promise<Response> {
+    if (!this.env.DB) {
+      return errorResponse('DB binding is missing', 500);
+    }
     const url = new URL(request.url);
     const pathname = url.pathname;
     const capsuleId = request.headers.get('X-Capsule-ID');
