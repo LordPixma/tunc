@@ -1,3 +1,10 @@
+import type {
+  D1Database,
+  R2Bucket,
+  Queue,
+  DurableObjectState
+} from '@cloudflare/workers-types';
+
 export interface Env {
   DB: D1Database;
   MEDIA_BUCKET: R2Bucket;
@@ -43,10 +50,8 @@ function isValidAttachment(ref: string, capsuleId: string): boolean {
     if (!match) {
       return false;
     }
-    if (match[1].toLowerCase() !== capsuleId.toLowerCase()) {
-      return false;
-    }
-    return true;
+    // ensure the capsule ID in the path matches the provided capsuleId
+    return match[1].toLowerCase() === capsuleId.toLowerCase();
   }
 }
 
@@ -132,6 +137,7 @@ export class TimelineDO {
           )
           .run();
       } catch (err) {
+        console.error('failed to insert timeline item', err);
         return errorResponse('db error', 500);
       }
 
@@ -157,6 +163,7 @@ export class TimelineDO {
 
         return jsonResponse(items, 200);
       } catch (err) {
+        console.error('failed to retrieve timeline', err);
         return errorResponse('db error', 500);
       }
     }
@@ -165,6 +172,10 @@ export class TimelineDO {
     if (request.method === "DELETE" && pathname.startsWith("/item/")) {
       const parts = pathname.split("/");
       const itemId = parts[2];
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!itemId || !uuidPattern.test(itemId)) {
+        return errorResponse('invalid item id', 400);
+      }
       try {
         const res = await this.env.DB.prepare(
           'DELETE FROM items WHERE capsule_id = ?1 AND id = ?2'
@@ -177,6 +188,7 @@ export class TimelineDO {
           return new Response(null, { status: 204 });
         }
       } catch (err) {
+        console.error('failed to delete item', err);
         return errorResponse('db error', 500);
       }
 
