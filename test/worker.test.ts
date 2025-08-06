@@ -74,6 +74,7 @@ describe('Worker endpoints', () => {
     expect(data.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(db.prepare).toHaveBeenCalled();
     expect(doFetch).toHaveBeenCalled();
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
   it('rejects overly long capsule names', async () => {
@@ -125,6 +126,7 @@ describe('Worker endpoints', () => {
     const data = await res.json();
     expect(data.url.startsWith(`https://bucket.r2.dev/${capsuleId}/`)).toBe(true);
     expect(put).toHaveBeenCalled();
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 });
 
@@ -149,6 +151,7 @@ describe('Timeline Durable Object', () => {
     });
     const addRes = await timeline.fetch(addReq);
     expect(addRes.status).toBe(201);
+    expect(addRes.headers.get('Access-Control-Allow-Origin')).toBe('*');
 
     const getReq = new Request('https://example.com/', {
       method: 'GET',
@@ -162,7 +165,16 @@ describe('Timeline Durable Object', () => {
     const items = await getRes.json();
     expect(items).toHaveLength(1);
     expect(items[0].message).toBe('hello');
+    expect(getRes.headers.get('Access-Control-Allow-Origin')).toBe('*');
     expect(items[0].attachments).toEqual([`${capsuleId}/${attachmentId}`]);
+  });
+
+  it('handles OPTIONS requests with CORS headers', async () => {
+    const env: any = { DB: {}, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
+    const timeline = new TimelineDO({} as any, env);
+    const res = await timeline.fetch(new Request('https://example.com/', { method: 'OPTIONS' }));
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
   it('rejects attachments referencing other capsules', async () => {
@@ -205,5 +217,20 @@ describe('Timeline Durable Object', () => {
     expect(delRes.status).toBe(400);
     const err = await delRes.json();
     expect(err.error).toBe('invalid item id');
+  });
+});
+
+describe('CORS', () => {
+  it('responds to OPTIONS with headers in worker', async () => {
+    const env: any = {
+      TIMELINE_DO: {},
+      MEDIA_BUCKET: {},
+      DB: {},
+      NOTIFY_QUEUE: {},
+      API_TOKEN: 'token',
+    };
+    const res = await worker.fetch(new Request('https://example.com/capsule', { method: 'OPTIONS' }), env, {} as any);
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 });

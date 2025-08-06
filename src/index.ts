@@ -20,11 +20,18 @@ interface Env {
   API_TOKEN: string;
 }
 
+function addCorsHeaders(res: Response): Response {
+  res.headers.set('Access-Control-Allow-Origin', '*');
+  res.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return res;
+}
+
 function jsonResponse(data: any, status: number = 200): Response {
-  return new Response(JSON.stringify(data), {
+  return addCorsHeaders(new Response(JSON.stringify(data), {
     status,
     headers: { 'Content-Type': 'application/json' }
-  });
+  }));
 }
 
 function errorResponse(message: string, status: number = 400): Response {
@@ -67,16 +74,20 @@ async function readStreamLimited(stream: ReadableStream<Uint8Array>, maxSize: nu
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    if (req.method === 'OPTIONS') {
+      return addCorsHeaders(new Response(null, { status: 204 }));
+    }
+
     // Validate required environment bindings
     const required: (keyof Env)[] = ['TIMELINE_DO', 'MEDIA_BUCKET', 'DB', 'NOTIFY_QUEUE', 'API_TOKEN'];
     const missing = required.filter((key) => !(env as any)[key]);
     if (missing.length > 0) {
-      return new Response(`Missing bindings: ${missing.join(', ')}`, { status: 500 });
+      return addCorsHeaders(new Response(`Missing bindings: ${missing.join(', ')}`, { status: 500 }));
     }
 
     const authHeader = req.headers.get('Authorization');
     if (authHeader !== `Bearer ${env.API_TOKEN}`) {
-      return new Response('Unauthorized', { status: 401 });
+      return addCorsHeaders(new Response('Unauthorized', { status: 401 }));
     }
 
     const url = new URL(req.url);
@@ -121,7 +132,7 @@ export default {
     if (req.method === 'POST' && parts[0] === 'upload' && parts.length === 2) {
       const capsuleId = parts[1];
       if (!isValidUUID(capsuleId)) {
-        return new Response('Invalid capsuleId', { status: 400 });
+        return addCorsHeaders(new Response('Invalid capsuleId', { status: 400 }));
       }
 
       const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
@@ -132,7 +143,7 @@ export default {
           return errorResponse('Invalid content-length', 400);
         }
         if (contentLength > MAX_UPLOAD_SIZE) {
-          return new Response('File too large', { status: 413 });
+          return addCorsHeaders(new Response('File too large', { status: 413 }));
         }
       }
 
@@ -144,38 +155,38 @@ export default {
         const form = await req.formData();
         const file = form.get('file');
         if (!(file instanceof File)) {
-          return new Response('File not provided', { status: 400 });
+          return addCorsHeaders(new Response('File not provided', { status: 400 }));
         }
         fileType = file.type || '';
         if (!ALLOWED_MIME_TYPES.has(fileType)) {
-          return new Response('Unsupported file type', { status: 415 });
+          return addCorsHeaders(new Response('Unsupported file type', { status: 415 }));
         }
         if (file.size > MAX_UPLOAD_SIZE) {
-          return new Response('File too large', { status: 413 });
+          return addCorsHeaders(new Response('File too large', { status: 413 }));
         }
         try {
           data = await readStreamLimited(file.stream(), MAX_UPLOAD_SIZE);
         } catch (err) {
           console.error('error reading multipart file stream', err);
-          return new Response('File too large', { status: 413 });
+          return addCorsHeaders(new Response('File too large', { status: 413 }));
         }
       } else {
-        fileType = req.headers.get('content-type') || '';
+        fileType = contentType;
         if (!ALLOWED_MIME_TYPES.has(fileType)) {
-          return new Response('Unsupported file type', { status: 415 });
+          return addCorsHeaders(new Response('Unsupported file type', { status: 415 }));
         }
         const bodyStream = req.body;
         if (!bodyStream) {
-          return new Response('No data', { status: 400 });
+          return addCorsHeaders(new Response('No data', { status: 400 }));
         }
         try {
           data = await readStreamLimited(bodyStream, MAX_UPLOAD_SIZE);
         } catch (err) {
           console.error('error reading upload body', err);
-          return new Response('File too large', { status: 413 });
+          return addCorsHeaders(new Response('File too large', { status: 413 }));
         }
-        if (!data || data.byteLength === 0) {
-          return new Response('No data', { status: 400 });
+        if (data.byteLength === 0) {
+          return addCorsHeaders(new Response('No data', { status: 400 }));
         }
       }
 
@@ -192,10 +203,10 @@ export default {
       const baseUrl = bucketName ? `https://${bucketName}.r2.dev` : '';
       const urlResponse = baseUrl ? `${baseUrl}/${key}` : key;
 
-      return new Response(JSON.stringify({ url: urlResponse }), {
+      return addCorsHeaders(new Response(JSON.stringify({ url: urlResponse }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' }
-      });
+      }));
     }
 
     // POST /capsule/:id/item -> add an item to a capsule timeline
@@ -211,7 +222,7 @@ export default {
         const forwardRequest = new Request(forwardUrl.toString(), req);
         forwardRequest.headers.set('X-Capsule-ID', capsuleId);
         forwardRequest.headers.set('Authorization', `Bearer ${env.API_TOKEN}`);
-        return await stub.fetch(forwardRequest);
+        return addCorsHeaders(await stub.fetch(forwardRequest));
       } catch (err) {
         console.error('failed to add item', err);
         return errorResponse('failed to add item', 500);
@@ -231,13 +242,13 @@ export default {
         const forwardRequest = new Request(forwardUrl.toString(), req);
         forwardRequest.headers.set('X-Capsule-ID', capsuleId);
         forwardRequest.headers.set('Authorization', `Bearer ${env.API_TOKEN}`);
-        return await stub.fetch(forwardRequest);
+        return addCorsHeaders(await stub.fetch(forwardRequest));
       } catch (err) {
         console.error('failed to retrieve capsule', err);
         return errorResponse('failed to retrieve capsule', 500);
       }
     }
 
-    return new Response('Not Found', { status: 404 });
+    return addCorsHeaders(new Response('Not Found', { status: 404 }));
   }
 };

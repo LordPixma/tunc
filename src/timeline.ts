@@ -20,11 +20,18 @@ interface TimelineItem {
   created_at: string;
 }
 
+function addCorsHeaders(res: Response): Response {
+  res.headers.set('Access-Control-Allow-Origin', '*');
+  res.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Capsule-ID');
+  return res;
+}
+
 function jsonResponse(data: any, status: number = 200): Response {
-  return new Response(JSON.stringify(data), {
+  return addCorsHeaders(new Response(JSON.stringify(data), {
     status,
     headers: { 'Content-Type': 'application/json' }
-  });
+  }));
 }
 
 function errorResponse(message: string, status: number = 400): Response {
@@ -65,6 +72,10 @@ export class TimelineDO {
   }
 
   async fetch(request: Request): Promise<Response> {
+    if (request.method === 'OPTIONS') {
+      return addCorsHeaders(new Response(null, { status: 204 }));
+    }
+
     // Ensure the DB binding is present
     if (!this.env.DB) {
       return errorResponse('DB binding is missing', 500);
@@ -73,7 +84,7 @@ export class TimelineDO {
     // Authenticate
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${this.env.API_TOKEN}`) {
-      return new Response('Unauthorized', { status: 401 });
+      return addCorsHeaders(new Response('Unauthorized', { status: 401 }));
     }
 
     const url = new URL(request.url);
@@ -185,7 +196,7 @@ export class TimelineDO {
 
         const changes = (res.meta as any)?.changes ?? 0;
         if (changes > 0) {
-          return new Response(null, { status: 204 });
+          return addCorsHeaders(new Response(null, { status: 204 }));
         }
       } catch (err) {
         console.error('failed to delete item', err);
@@ -196,6 +207,6 @@ export class TimelineDO {
     }
 
     // If no route matches, return a 404 response
-    return new Response("Not found", { status: 404 });
+    return addCorsHeaders(new Response("Not found", { status: 404 }));
   }
 }
