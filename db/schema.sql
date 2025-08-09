@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS items (
   message TEXT NOT NULL,
   attachments TEXT,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  opening_date DATETIME,
-  FOREIGN KEY (capsule_id) REFERENCES capsules(id)
+  opening_date TEXT,
+  FOREIGN KEY (capsule_id) REFERENCES capsules(id) ON DELETE CASCADE
 );
+
+-- Index to speed up lookups by capsule and creation time
+CREATE INDEX IF NOT EXISTS idx_items_capsule_id_created_at ON items (capsule_id, created_at);

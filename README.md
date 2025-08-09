@@ -1,12 +1,12 @@
 # Tunc
 
-Tunc is a serverless multimedia event platform built entirely on the Cloudflare developer ecosystem. It allows communities to co‑create timelines (“capsules”), attach media and messages, and lock content until a specified reveal date. Each timeline is isolated in its own Durable Object for consistent state with global access.
+Tunc is a serverless multimedia event platform built entirely on the Cloudflare developer ecosystem. It allows communities to co-create timelines (“capsules”), attach media and messages, and lock content until a specified reveal date. Each timeline is isolated in its own Durable Object for consistent state with global access.
 
 ## Architecture
 
 * **Cloudflare Workers** – Hosts the REST API and handles incoming requests.
 * **Durable Objects** – One object per timeline to manage ordering and locking of items.
-* **D1 (SQL)** – Stores timeline metadata and provides relational queries. See `schema.sql` for table definitions.
+* **D1 (SQL)** – Stores timeline metadata and provides relational queries. See `db/schema.sql` for table definitions.
 * **R2** – Stores large media files (images, video). Items reference R2 object keys.
 * **Queues** – Used for asynchronous tasks like processing media or sending notifications.
 * **Pages** – Serves the front‑end generated from the MagicPatterns design.
@@ -25,10 +25,16 @@ Tunc is a serverless multimedia event platform built entirely on the Cloudflare 
 5. Apply the SQL schema to your database:
 
    ```bash
-   wrangler d1 execute tunc-db --file schema.sql
+   wrangler d1 execute tunc-db --file db/schema.sql
    ```
 
-6. Build and deploy:
+6. Run migrations when upgrading an existing database:
+
+   ```bash
+   wrangler d1 execute tunc-db --file migrations/0002_items_index_and_cascade.sql
+   ```
+
+7. Build and deploy:
 
    ```bash
    # deploy the API to Workers

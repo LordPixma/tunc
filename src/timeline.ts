@@ -130,23 +130,24 @@ export class TimelineDO {
         }
       }
 
-      const id = crypto.randomUUID();
-      const created_at = new Date().toISOString();
-      const item: TimelineItem = { id, message, openingDate, attachments, created_at };
+        const id = crypto.randomUUID();
+        const created_at = new Date().toISOString();
+        const normalizedOpeningDate = openingDate ? new Date(openingDate).toISOString() : null;
+        const item: TimelineItem = { id, message, openingDate: normalizedOpeningDate || undefined, attachments, created_at };
 
-      try {
-        await this.env.DB.prepare(
-          'INSERT INTO items (id, capsule_id, message, attachments, opening_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
-        )
-          .bind(
-            id,
-            capsuleId,
-            message,
-            attachments ? JSON.stringify(attachments) : null,
-            openingDate,
-            created_at
+        try {
+          await this.env.DB.prepare(
+            'INSERT INTO items (id, capsule_id, message, attachments, opening_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
           )
-          .run();
+            .bind(
+              id,
+              capsuleId,
+              message,
+              attachments ? JSON.stringify(attachments) : null,
+              normalizedOpeningDate,
+              created_at
+            )
+            .run();
       } catch (err) {
         console.error('failed to insert timeline item', err);
         return errorResponse('db error', 500);
