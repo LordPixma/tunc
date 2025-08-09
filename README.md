@@ -11,44 +11,64 @@ Tunc is a serverless multimedia event platform built entirely on the Cloudflare 
 * **Queues** – Used for asynchronous tasks like processing media or sending notifications.
 * **Pages** – Serves the front‑end generated from the MagicPatterns design.
 
-## Getting started
+## Setup
 
 1. Install Wrangler v3+ and Node.js.
-2. Clone this repository and install dependencies (if any front‑end code is added).
-3. Create a D1 database for your environment:
+2. Clone this repository and install dependencies.
+3. Configure environment variables by creating a `.env` file:
+
+   ```bash
+   API_TOKEN="replace-with-strong-secret"
+   VITE_API_BASE_URL="http://localhost:8787"
+   ```
+
+   Store secrets in Cloudflare with `wrangler secret put API_TOKEN` and never commit them to version control.
+4. Create a D1 database for your environment:
 
    ```bash
    wrangler d1 create tunc-db
    ```
 
-4. Set the `database_id` in `wrangler.toml` under the `[[d1_databases]]` section. The `binding` should remain `DB` so the Worker can access `env.DB`.
-5. Apply the SQL schema to your database:
+5. Apply migrations to the database:
 
    ```bash
+   wrangler d1 migrations apply tunc-db
+   # or load the schema directly
    wrangler d1 execute tunc-db --file schema.sql
    ```
 
-6. Build and deploy:
+6. Run the UI during development:
 
    ```bash
-   # deploy the API to Workers
-   wrangler deploy
-
-   # optional: deploy the front‑end built from magicpatterns (see /ui directory when exported)
+   cd ui
+   npm install
+   npm run dev
    ```
 
-## API Routes
+7. Deploy the Worker:
 
-The Worker exposes a small REST API:
+   ```bash
+   wrangler deploy
+   ```
 
-| Method & path            | Description                                 |
-|--------------------------|---------------------------------------------|
-| `POST /capsule`          | Create a new timeline. Body: `{ "name": "Event Name" }`. Returns `{ id }`. |
-| `POST /capsule/:id/item` | Add an item to a timeline. Delegates to the Durable Object. Body: `{ "message": "...", "openingDate": "YYYY-MM-DD", "attachments": [] }`. Message max 1000 chars, up to 5 attachment URLs or `uuid/uuid` IDs. |
-| `GET /capsule/:id`       | Retrieve the full timeline (list of items). |
-| `POST /upload/:capsuleId` | Upload a file for a capsule (max 10 MB). Accepts binary or `multipart/form-data` body and returns `{ url }` referencing the stored object. |
+## API Endpoints
+
+All endpoints require an `Authorization: Bearer <API_TOKEN>` header.
+
+| Method | Endpoint | Parameters | Status codes | Example response |
+|--------|----------|------------|--------------|------------------|
+| POST | `/capsule` | Body: `{ "name": string }` | `201`, `400`, `401`, `500` | `{"id":"550e8400-e29b-41d4-a716-446655440000"}` |
+| POST | `/capsule/:id/item` | Path: `id` (UUID)<br>Body: `{ "message": string, "openingDate"?: "YYYY-MM-DD", "attachments"?: string[] }` | `201`, `400`, `401`, `500` | `{"id":"...","message":"Hello","attachments":[],"created_at":"2025-01-01T00:00:00.000Z"}` |
+| GET | `/capsule/:id` | Path: `id` (UUID) | `200`, `400`, `401`, `500` | `[ {"id":"...","message":"..."} ]` |
+| POST | `/upload/:capsuleId` | Path: `capsuleId` (UUID)<br>Body: binary or multipart `file` | `201`, `400`, `401`, `413`, `415`, `500` | `{"url":"https://<bucket>.r2.dev/<capsuleId>/<uuid>"}` |
 
 See `src/index.ts` and `src/timeline.ts` for implementation details.
+
+## Authentication & Security
+
+* **Authentication** – Every request must include `Authorization: Bearer <API_TOKEN>`. Generate a strong token and store it with `wrangler secret put`.
+* **Security headers** – The Worker sets permissive CORS headers for development. For production you should add headers such as `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, and `Strict-Transport-Security` to harden responses.
+* **Environment secrets** – Do not commit `.env` files. Use Wrangler secrets for `API_TOKEN` and any future keys (e.g. webhook URLs or third‑party credentials).
 
 ## Front‑end
 
