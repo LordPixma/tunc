@@ -62,7 +62,7 @@ export function Timeline() {
       <div className="flex items-center mb-6">
         <div className="flex -space-x-2 mr-4">
           {event?.collaborators?.slice(0, 5).map(collaborator => <div key={collaborator.id} className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 overflow-hidden">
-              <img src={collaborator.avatar} alt={collaborator.name} className="w-full h-full object-cover" />
+              <img src={collaborator.avatar} alt={`${collaborator.name}'s avatar`} className="w-full h-full object-cover" />
             </div>)}
         </div>
         <button className="text-teal-600 dark:text-teal-400 font-medium text-sm">
@@ -85,7 +85,7 @@ export function Timeline() {
           </select>
         </div>
         <button className="flex items-center bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium">
-          <PlusIcon className="w-4 h-4 mr-2" />
+          <PlusIcon className="w-4 h-4 mr-2" aria-hidden="true" />
           Add Content
         </button>
       </div>
@@ -95,7 +95,7 @@ export function Timeline() {
             {/* Item Header */}
             <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-700">
               <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
-                <img src={item.author.avatar} alt={item.author.name} className="w-full h-full object-cover" />
+                <img src={item.author.avatar} alt={`${item.author.name}'s avatar`} className="w-full h-full object-cover" />
               </div>
               <div>
                 <h3 className="font-medium">{item.author.name}</h3>
@@ -104,7 +104,7 @@ export function Timeline() {
                 </p>
               </div>
               {item.isLocked && <div className="ml-auto flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1">
-                  <LockIcon className="w-4 h-4 text-gray-600 dark:text-gray-400 mr-1" />
+                  <LockIcon className="w-4 h-4 text-gray-600 dark:text-gray-300 mr-1" aria-hidden="true" />
                   <span className="text-xs text-gray-600 dark:text-gray-400">
                     Unlocks{' '}
                     {new Date(item.lockInfo.unlockDate).toLocaleDateString()}
@@ -114,7 +114,7 @@ export function Timeline() {
             {/* Item Content */}
             {item.type === 'photo' && !item.isLocked && <div>
                 <div className="w-full aspect-video overflow-hidden">
-                  <img src={item.content.image} alt={item.content.caption} className="w-full h-full object-cover" />
+                  <img src={item.content.image} alt={item.content.caption || 'Timeline content'} className="w-full h-full object-cover" />
                 </div>
                 {item.content.caption && <p className="p-4 text-gray-800 dark:text-gray-200">
                     {item.content.caption}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SearchIcon, MapPinIcon, CalendarIcon, UsersIcon, GlobeIcon } from 'lucide-react';
 export function Discover() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
   // Mock data
   const publicEvents = [{
     id: '1',
@@ -56,8 +57,25 @@ export function Discover() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Discover Public Events</h1>
         <div className="flex items-center space-x-2">
-          <button onClick={() => setViewMode('list')} className={`px-3 py-2 rounded-lg flex items-center ${viewMode === 'list' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button
+            tabIndex={0}
+            aria-label="List view"
+            aria-pressed={viewMode === 'list'}
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-2 rounded-lg flex items-center ${viewMode === 'list' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            <svg
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="8" y1="6" x2="21" y2="6"></line>
               <line x1="8" y1="12" x2="21" y2="12"></line>
               <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -66,52 +84,82 @@ export function Discover() {
               <line x1="3" y1="18" x2="3.01" y2="18"></line>
             </svg>
           </button>
-          <button onClick={() => setViewMode('map')} className={`px-3 py-2 rounded-lg flex items-center ${viewMode === 'map' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
-            <MapPinIcon className="w-5 h-5" />
+          <button
+            tabIndex={0}
+            aria-label="Map view"
+            aria-pressed={viewMode === 'map'}
+            onClick={() => setViewMode('map')}
+            className={`px-3 py-2 rounded-lg flex items-center ${viewMode === 'map' ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            <MapPinIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
       </div>
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <SearchIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <SearchIcon className="w-5 h-5 text-gray-500 dark:text-gray-300" aria-hidden="true" />
         </div>
         <input type="text" placeholder="Search events, locations, or themes..." className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all" />
       </div>
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        <button className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm font-medium flex items-center">
-          <GlobeIcon className="w-4 h-4 mr-2" />
+        <button
+          tabIndex={0}
+          aria-label="Show events from all locations"
+          aria-pressed={activeFilter === 'all'}
+          onClick={() => setActiveFilter('all')}
+          className={`px-4 py-2 rounded-full flex items-center text-sm font-medium ${activeFilter === 'all' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
+        >
+          <GlobeIcon className="w-4 h-4 mr-2" aria-hidden="true" />
           All Locations
         </button>
-        <button className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm font-medium flex items-center">
-          <CalendarIcon className="w-4 h-4 mr-2" />
+        <button
+          tabIndex={0}
+          aria-label="Show events for any date"
+          aria-pressed={activeFilter === 'date'}
+          onClick={() => setActiveFilter('date')}
+          className={`px-4 py-2 rounded-full flex items-center text-sm font-medium ${activeFilter === 'date' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
+        >
+          <CalendarIcon className="w-4 h-4 mr-2" aria-hidden="true" />
           Any Date
         </button>
-        <button className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm font-medium">
+        <button
+          tabIndex={0}
+          aria-label="Sort by most popular"
+          aria-pressed={activeFilter === 'popular'}
+          onClick={() => setActiveFilter('popular')}
+          className={`px-4 py-2 rounded-full text-sm font-medium ${activeFilter === 'popular' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
+        >
           Most Popular
         </button>
-        <button className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm font-medium">
+        <button
+          tabIndex={0}
+          aria-label="Sort by recent"
+          aria-pressed={activeFilter === 'recent'}
+          onClick={() => setActiveFilter('recent')}
+          className={`px-4 py-2 rounded-full text-sm font-medium ${activeFilter === 'recent' ? 'bg-teal-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
+        >
           Recent
         </button>
       </div>
       {viewMode === 'list' ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {publicEvents.map(event => <div key={event.id} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-48 relative">
-                <img src={event.coverImage} alt={event.title} className="w-full h-full object-cover" />
+                <img src={event.coverImage} alt={`${event.title} cover`} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
                   <h3 className="font-bold text-xl text-white mb-1">
                     {event.title}
                   </h3>
                   <div className="flex items-center text-white/80 text-sm">
-                    <MapPinIcon className="w-4 h-4 mr-1" />
+                    <MapPinIcon className="w-4 h-4 mr-1" aria-hidden="true" />
                     <span>{event.location}</span>
                   </div>
                 </div>
               </div>
               <div className="p-4">
-                <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-4">
-                  <CalendarIcon className="w-4 h-4 mr-1" />
+                <div className="flex items-center text-gray-600 dark:text-gray-300 text-sm mb-4">
+                  <CalendarIcon className="w-4 h-4 mr-1" aria-hidden="true" />
                   <span>
                     {new Date(event.date).toLocaleDateString(undefined, {
                 year: 'numeric',
@@ -122,12 +170,24 @@ export function Discover() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <UsersIcon className="w-4 h-4 mr-1" />
+                    <div className="flex items-center text-gray-600 dark:text-gray-300">
+                      <UsersIcon className="w-4 h-4 mr-1" aria-hidden="true" />
                       <span className="text-sm">{event.collaborators}</span>
                     </div>
-                    <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <div className="flex items-center text-gray-600 dark:text-gray-300">
+                      <svg
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-1"
+                      >
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
@@ -145,8 +205,8 @@ export function Discover() {
         </div> : <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm h-[500px] relative">
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
             <div className="text-center">
-              <MapPinIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
+              <MapPinIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" aria-hidden="true" />
+              <p className="text-gray-600 dark:text-gray-300">
                 Map view would display here with event pins
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
@@ -157,7 +217,7 @@ export function Discover() {
           {/* Map event cards - would be positioned based on coordinates */}
           <div className="absolute top-6 right-6 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
             <div className="h-32 relative">
-              <img src={publicEvents[0].coverImage} alt={publicEvents[0].title} className="w-full h-full object-cover" />
+              <img src={publicEvents[0].coverImage} alt={`${publicEvents[0].title} cover`} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-3">
                 <h3 className="font-bold text-white text-sm">
                   {publicEvents[0].title}
@@ -165,8 +225,8 @@ export function Discover() {
               </div>
             </div>
             <div className="p-3">
-              <div className="flex items-center text-gray-600 dark:text-gray-400 text-xs mb-2">
-                <CalendarIcon className="w-3 h-3 mr-1" />
+              <div className="flex items-center text-gray-600 dark:text-gray-300 text-xs mb-2">
+                <CalendarIcon className="w-3 h-3 mr-1" aria-hidden="true" />
                 <span>
                   {new Date(publicEvents[0].date).toLocaleDateString()}
                 </span>

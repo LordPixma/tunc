@@ -6,7 +6,7 @@ export function EventCreation() {
   const [eventType, setEventType] = useState<'private' | 'public'>('private');
   return <div className="max-w-2xl mx-auto py-6">
       <Link to="/" className="inline-flex items-center text-gray-600 dark:text-gray-300 mb-6">
-        <ArrowLeftIcon className="w-5 h-5 mr-2" />
+        <ArrowLeftIcon className="w-5 h-5 mr-2" aria-hidden="true" />
         Back to Events
       </Link>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 md:p-8">
@@ -28,13 +28,13 @@ export function EventCreation() {
               <input type="text" id="event-name" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all" placeholder="e.g., Summer Beach Trip 2023" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <span className="block text-sm font-medium mb-2">
                 Event Type
-              </label>
+              </span>
               <div className="grid grid-cols-2 gap-4">
                 <button type="button" onClick={() => setEventType('private')} className={`p-4 rounded-lg border ${eventType === 'private' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' : 'border-gray-300 dark:border-gray-600'} flex flex-col items-center`}>
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${eventType === 'private' ? 'bg-teal-100 dark:bg-teal-800/30 text-teal-600 dark:text-teal-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
-                    <LockIcon className="w-6 h-6" />
+                    <LockIcon className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <span className="font-medium">Private</span>
                   <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
@@ -43,7 +43,7 @@ export function EventCreation() {
                 </button>
                 <button type="button" onClick={() => setEventType('public')} className={`p-4 rounded-lg border ${eventType === 'public' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' : 'border-gray-300 dark:border-gray-600'} flex flex-col items-center`}>
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${eventType === 'public' ? 'bg-teal-100 dark:bg-teal-800/30 text-teal-600 dark:text-teal-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
-                    <GlobeIcon className="w-6 h-6" />
+                    <GlobeIcon className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <span className="font-medium">Public</span>
                   <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
@@ -64,12 +64,12 @@ export function EventCreation() {
           </div>}
         {step === 2 && <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <span className="block text-sm font-medium mb-2">
                 Cover Photo
-              </label>
+              </span>
               <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center justify-center">
                 <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-                  <ImageIcon className="w-8 h-8 text-gray-500 dark:text-gray-400" />
+                  <ImageIcon className="w-8 h-8 text-gray-500 dark:text-gray-400" aria-hidden="true" />
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 text-center mb-4">
                   Drag and drop an image, or click to browse
@@ -80,9 +80,9 @@ export function EventCreation() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <span className="block text-sm font-medium mb-2">
                 Description (Optional)
-              </label>
+              </span>
               <textarea className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all min-h-[100px]" placeholder="Add a description for your event..." />
             </div>
             <div className="flex space-x-4">
@@ -96,9 +96,9 @@ export function EventCreation() {
           </div>}
         {step === 3 && <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <span className="block text-sm font-medium mb-2">
                 Invite Collaborators
-              </label>
+              </span>
               <div className="flex items-center space-x-2 mb-4">
                 <input type="email" className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all" placeholder="Enter email address" />
                 <button type="button" className="px-4 py-3 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors whitespace-nowrap">
@@ -107,7 +107,7 @@ export function EventCreation() {
               </div>
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 flex items-center justify-center border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col items-center">
-                  <UsersIcon className="w-8 h-8 text-gray-400 mb-2" />
+                  <UsersIcon className="w-8 h-8 text-gray-400 mb-2" aria-hidden="true" />
                   <p className="text-gray-600 dark:text-gray-400 text-center">
                     No collaborators added yet
                   </p>

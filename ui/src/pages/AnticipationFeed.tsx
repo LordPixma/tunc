@@ -67,7 +67,7 @@ export function AnticipationFeed() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {dateUnlock.map(capsule => <div key={capsule.id} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-48 relative overflow-hidden">
-                <img src={capsule.thumbnail} alt={capsule.title} className="w-full h-full object-cover" />
+                <img src={capsule.thumbnail} alt={`${capsule.title} thumbnail`} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
                   <h3 className="font-bold text-white">{capsule.title}</h3>
                   <p className="text-sm text-white/80">
@@ -79,14 +79,14 @@ export function AnticipationFeed() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
-                      <img src={capsule.creator.avatar} alt={capsule.creator.name} className="w-full h-full object-cover" />
+                      <img src={capsule.creator.avatar} alt={`${capsule.creator.name}'s avatar`} className="w-full h-full object-cover" />
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {capsule.creator.name}
                     </span>
                   </div>
                   <div className="flex items-center text-gray-600 dark:text-gray-400">
-                    <LockIcon className="w-4 h-4 mr-1" />
+                    <LockIcon className="w-4 h-4 mr-1" aria-hidden="true" />
                     <span className="text-sm">Locked</span>
                   </div>
                 </div>
@@ -115,7 +115,7 @@ export function AnticipationFeed() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {locationUnlock.map(capsule => <div key={capsule.id} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-48 relative overflow-hidden">
-                <img src={capsule.thumbnail} alt={capsule.title} className="w-full h-full object-cover" />
+                <img src={capsule.thumbnail} alt={`${capsule.title} thumbnail`} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
                   <h3 className="font-bold text-white">{capsule.title}</h3>
                   <p className="text-sm text-white/80">
@@ -127,14 +127,14 @@ export function AnticipationFeed() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
-                      <img src={capsule.creator.avatar} alt={capsule.creator.name} className="w-full h-full object-cover" />
+                      <img src={capsule.creator.avatar} alt={`${capsule.creator.name}'s avatar`} className="w-full h-full object-cover" />
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {capsule.creator.name}
                     </span>
                   </div>
                   <div className="flex items-center text-gray-600 dark:text-gray-400">
-                    <LockIcon className="w-4 h-4 mr-1" />
+                    <LockIcon className="w-4 h-4 mr-1" aria-hidden="true" />
                     <span className="text-sm">Locked</span>
                   </div>
                 </div>
@@ -164,7 +164,7 @@ export function AnticipationFeed() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {sensorUnlock.map(capsule => <div key={capsule.id} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-48 relative overflow-hidden">
-                <img src={capsule.thumbnail} alt={capsule.title} className="w-full h-full object-cover" />
+                <img src={capsule.thumbnail} alt={`${capsule.title} thumbnail`} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
                   <h3 className="font-bold text-white">{capsule.title}</h3>
                   <p className="text-sm text-white/80">
@@ -176,14 +176,14 @@ export function AnticipationFeed() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
-                      <img src={capsule.creator.avatar} alt={capsule.creator.name} className="w-full h-full object-cover" />
+                      <img src={capsule.creator.avatar} alt={`${capsule.creator.name}'s avatar`} className="w-full h-full object-cover" />
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {capsule.creator.name}
                     </span>
                   </div>
                   <div className="flex items-center text-gray-600 dark:text-gray-400">
-                    <LockIcon className="w-4 h-4 mr-1" />
+                    <LockIcon className="w-4 h-4 mr-1" aria-hidden="true" />
                     <span className="text-sm">Locked</span>
                   </div>
                 </div>

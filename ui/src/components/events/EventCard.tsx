@@ -18,9 +18,9 @@ export function EventCard({
 }: EventCardProps) {
   return <Link to={`/timeline/${event.id}`} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <div className="h-40 overflow-hidden relative">
-        <img src={event.coverImage} alt={event.title} className="w-full h-full object-cover" />
+        <img src={event.coverImage} alt={`${event.title} cover`} className="w-full h-full object-cover" />
         <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 flex items-center">
-          {event.isPublic ? <GlobeIcon className="w-4 h-4 text-white mr-1" /> : <LockIcon className="w-4 h-4 text-white mr-1" />}
+          {event.isPublic ? <GlobeIcon className="w-4 h-4 text-white mr-1" aria-hidden="true" /> : <LockIcon className="w-4 h-4 text-white mr-1" aria-hidden="true" />}
           <span className="text-xs text-white">
             {event.isPublic ? 'Public' : 'Private'}
           </span>
@@ -37,16 +37,16 @@ export function EventCard({
         </p>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="flex items-center text-gray-600 dark:text-gray-400">
-              <UsersIcon className="w-4 h-4 mr-1" />
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
+              <UsersIcon className="w-4 h-4 mr-1" aria-hidden="true" />
               <span className="text-sm">{event.collaborators}</span>
             </div>
-            <div className="flex items-center text-gray-600 dark:text-gray-400">
-              <LockIcon className="w-4 h-4 mr-1" />
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
+              <LockIcon className="w-4 h-4 mr-1" aria-hidden="true" />
               <span className="text-sm">{event.capsules}</span>
             </div>
           </div>
-          <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+          <ChevronRightIcon className="w-5 h-5 text-gray-500" aria-hidden="true" />
         </div>
       </div>
     </Link>;

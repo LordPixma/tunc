@@ -47,7 +47,7 @@ export function Home() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">Your Events</h2>
           <Link to="/create" className="flex items-center text-teal-600 dark:text-teal-400 font-medium">
-            <PlusIcon className="w-5 h-5 mr-1" />
+            <PlusIcon className="w-5 h-5 mr-1" aria-hidden="true" />
             New Event
           </Link>
         </div>
@@ -55,7 +55,7 @@ export function Home() {
           {activeEvents.map(event => <EventCard key={event.id} event={event} />)}
           <Link to="/create" className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl h-64 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-              <PlusIcon className="w-8 h-8 text-gray-500 dark:text-gray-400" />
+              <PlusIcon className="w-8 h-8 text-gray-500 dark:text-gray-300" aria-hidden="true" />
             </div>
             <p className="text-lg font-medium text-gray-600 dark:text-gray-300">
               Create New Event
@@ -74,7 +74,7 @@ export function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {upcomingCapsules.map(capsule => <div key={capsule.id} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-40 overflow-hidden">
-                <img src={capsule.thumbnail} alt={capsule.title} className="w-full h-full object-cover" />
+                <img src={capsule.thumbnail} alt={`${capsule.title} thumbnail`} className="w-full h-full object-cover" />
               </div>
               <div className="p-4">
                 <h3 className="font-medium">{capsule.title}</h3>
