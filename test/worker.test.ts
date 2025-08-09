@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import worker from '../src/index';
+import worker, { createJWT } from '../src/index';
 import { TimelineDO } from '../src/timeline';
 
 // Simple in-memory DB mock used by TimelineDO tests
@@ -51,6 +51,8 @@ describe('Worker endpoints', () => {
       }),
     };
     const doFetch = vi.fn().mockResolvedValue(new Response(null));
+    const jwtSecret = 'secret';
+    const token = await createJWT({ sub: 'user', role: 'admin' }, jwtSecret);
     const env: any = {
       DB: db,
       MEDIA_BUCKET: {},
@@ -60,11 +62,12 @@ describe('Worker endpoints', () => {
         get: vi.fn().mockReturnValue({ fetch: doFetch }),
       },
       API_TOKEN: 'token',
+      JWT_SECRET: jwtSecret,
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer token',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ name: 'My Event' }),
     });
@@ -79,17 +82,20 @@ describe('Worker endpoints', () => {
 
   it('rejects overly long capsule names', async () => {
     const db = { prepare: vi.fn() };
+    const jwtSecret = 'secret';
+    const token = await createJWT({ sub: 'user', role: 'admin' }, jwtSecret);
     const env: any = {
       DB: db,
       MEDIA_BUCKET: {},
       NOTIFY_QUEUE: {},
       TIMELINE_DO: {},
       API_TOKEN: 'token',
+      JWT_SECRET: jwtSecret,
     };
     const longName = 'a'.repeat(101);
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer token' },
+      headers: { 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ name: longName }),
     });
     const res = await worker.fetch(req, env, {} as any);
@@ -101,12 +107,15 @@ describe('Worker endpoints', () => {
 
   it('uploads a file to R2', async () => {
     const put = vi.fn().mockResolvedValue({});
+    const jwtSecret = 'secret';
+    const token = await createJWT({ sub: 'user', role: 'user' }, jwtSecret);
     const env: any = {
       MEDIA_BUCKET: { put, bucketName: 'bucket' },
       DB: {},
       TIMELINE_DO: {},
       NOTIFY_QUEUE: {},
       API_TOKEN: 'token',
+      JWT_SECRET: jwtSecret,
     };
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
     const body = new Uint8Array([1, 2, 3]);
@@ -115,7 +124,7 @@ describe('Worker endpoints', () => {
       headers: {
         'content-type': 'image/png',
         'content-length': String(body.length),
-        'Authorization': 'Bearer token',
+        'Authorization': `Bearer ${token}`,
       },
       body,
     });
@@ -127,6 +136,27 @@ describe('Worker endpoints', () => {
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
+  it('forbids capsule creation for non-admin users', async () => {
+    const jwtSecret = 'secret';
+    const token = await createJWT({ sub: 'user', role: 'user' }, jwtSecret);
+    const env: any = {
+      DB: {},
+      MEDIA_BUCKET: {},
+      NOTIFY_QUEUE: {},
+      TIMELINE_DO: {},
+      API_TOKEN: 'token',
+      JWT_SECRET: jwtSecret,
+    };
+    const req = new Request('https://example.com/capsule', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ name: 'Test' }),
+    });
+    const res = await worker.fetch(req, env, {} as any);
+    expect(res.status).toBe(403);
+    expect(await res.text()).toBe('Forbidden');
+  });
+
   it('rejects unauthorized requests', async () => {
     const env: any = {
       DB: {},
@@ -134,6 +164,7 @@ describe('Worker endpoints', () => {
       NOTIFY_QUEUE: {},
       TIMELINE_DO: {},
       API_TOKEN: 'secret',
+      JWT_SECRET: 'secret',
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
@@ -146,16 +177,19 @@ describe('Worker endpoints', () => {
 
   it('rejects capsule creation with invalid payload', async () => {
     const db = { prepare: vi.fn() };
+    const jwtSecret = 'secret';
+    const token = await createJWT({ sub: 'user', role: 'admin' }, jwtSecret);
     const env: any = {
       DB: db,
       MEDIA_BUCKET: {},
       NOTIFY_QUEUE: {},
       TIMELINE_DO: {},
       API_TOKEN: 'secret',
+      JWT_SECRET: jwtSecret,
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer secret' },
+      headers: { 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({}),
     });
     const res = await worker.fetch(req, env, {} as any);
