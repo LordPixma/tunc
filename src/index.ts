@@ -18,12 +18,16 @@ interface Env {
   DB: D1Database;
   NOTIFY_QUEUE: Queue;
   API_TOKEN: string;
+  JWT_SECRET: string;
 }
 
 function addCorsHeaders(res: Response): Response {
   res.headers.set('Access-Control-Allow-Origin', '*');
   res.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('X-Content-Type-Options', 'nosniff');
   return res;
 }
 
@@ -40,6 +44,63 @@ function errorResponse(message: string, status: number = 400): Response {
 
 function isValidUUID(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+function base64urlEncode(data: Uint8Array): string {
+  let str = '';
+  data.forEach((b) => (str += String.fromCharCode(b)));
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64urlDecode(str: string): Uint8Array {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = str.length % 4;
+  if (pad) str += '='.repeat(4 - pad);
+  const binary = atob(str);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+export async function createJWT(payload: any, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const header = base64urlEncode(encoder.encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));
+  const payloadPart = base64urlEncode(encoder.encode(JSON.stringify(payload)));
+  const unsigned = `${header}.${payloadPart}`;
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(unsigned));
+  return `${unsigned}.${base64urlEncode(new Uint8Array(signature))}`;
+}
+
+export async function verifyJWT(token: string, secret: string): Promise<any | null> {
+  const [header, payload, signature] = token.split('.');
+  if (!header || !payload || !signature) return null;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+  const unsigned = `${header}.${payload}`;
+  const valid = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    base64urlDecode(signature),
+    encoder.encode(unsigned)
+  );
+  if (!valid) return null;
+  return JSON.parse(decoder.decode(base64urlDecode(payload)));
 }
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -79,22 +140,47 @@ export default {
     }
 
     // Validate required environment bindings
-    const required: (keyof Env)[] = ['TIMELINE_DO', 'MEDIA_BUCKET', 'DB', 'NOTIFY_QUEUE', 'API_TOKEN'];
+    const required: (keyof Env)[] = ['TIMELINE_DO', 'MEDIA_BUCKET', 'DB', 'NOTIFY_QUEUE', 'API_TOKEN', 'JWT_SECRET'];
     const missing = required.filter((key) => !(env as any)[key]);
     if (missing.length > 0) {
       return addCorsHeaders(new Response(`Missing bindings: ${missing.join(', ')}`, { status: 500 }));
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader !== `Bearer ${env.API_TOKEN}`) {
-      return addCorsHeaders(new Response('Unauthorized', { status: 401 }));
-    }
-
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean);
 
+    // Token issuance endpoint
+    if (req.method === 'POST' && parts[0] === 'auth' && parts[1] === 'token' && parts.length === 2) {
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader !== `Bearer ${env.API_TOKEN}`) {
+        return addCorsHeaders(new Response('Unauthorized', { status: 401 }));
+      }
+      const body = await req.json().catch(() => ({}));
+      const user = (body.user ?? '').trim();
+      const role = (body.role ?? 'user').trim();
+      if (!user) {
+        return errorResponse('user is required', 400);
+      }
+      const token = await createJWT({ sub: user, role }, env.JWT_SECRET);
+      return jsonResponse({ token }, 201);
+    }
+
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return addCorsHeaders(new Response('Unauthorized', { status: 401 }));
+    }
+    const token = authHeader.slice(7);
+    const payload = await verifyJWT(token, env.JWT_SECRET);
+    if (!payload) {
+      return addCorsHeaders(new Response('Unauthorized', { status: 401 }));
+    }
+    const user = payload as { sub: string; role?: string };
+
     // POST /capsule -> create new capsule (timeline)
     if (req.method === 'POST' && parts[0] === 'capsule' && parts.length === 1) {
+      if (user.role !== 'admin') {
+        return addCorsHeaders(new Response('Forbidden', { status: 403 }));
+      }
       const body = await req.json().catch(() => ({}));
       const name = (body.name ?? '').trim();
       if (!name) {
