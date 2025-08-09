@@ -5,25 +5,50 @@ export function Timeline() {
   const { id } = useParams<{ id: string }>();
   const [filter, setFilter] = useState<string>('all');
   const [event, setEvent] = useState<any | null>(null);
-  const [timelineItems, setTimelineItems] = useState<any[]>([]);
+  const [allItems, setAllItems] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     const fetchTimeline = async () => {
       try {
         setError(null);
+        setLoading(true);
         const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const res = await fetch(`${baseUrl}/capsule/${id}`);
-        if (!res.ok) throw new Error('Failed to load timeline');
+        if (!res.ok) {
+          if (res.status === 404)
+            throw new Error('Timeline not found');
+          if (res.status === 401)
+            throw new Error('You are not authorized to view this timeline');
+          throw new Error('Failed to load timeline');
+        }
         const data = await res.json();
         setEvent(data);
-        setTimelineItems(Array.isArray(data) ? data : data.items || []);
+        setAllItems(Array.isArray(data) ? data : data.items || []);
       } catch (err: any) {
-        setError(err.message || 'An error occurred');
+        if (err instanceof TypeError) {
+          setError('Network error. Please try again.');
+        } else {
+          setError(err.message || 'An error occurred');
+        }
+      } finally {
+        setLoading(false);
+        setPage(1);
       }
     };
     fetchTimeline();
   }, [id]);
+  const displayedItems = allItems.slice(0, page * ITEMS_PER_PAGE);
+  const hasMore = displayedItems.length < allItems.length;
+  if (loading) {
+    return <div className="p-6 flex justify-center" data-testid="loading-spinner">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+      </div>;
+  }
   if (error) {
     return <div className="p-6 text-red-500">{error}</div>;
   }
@@ -91,7 +116,7 @@ export function Timeline() {
       </div>
       {/* Timeline */}
       <div className="space-y-6">
-        {timelineItems.map(item => <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        {displayedItems.map(item => <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
             {/* Item Header */}
             <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-700">
               <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
@@ -180,5 +205,10 @@ export function Timeline() {
             </div>
           </div>)}
       </div>
+      {hasMore && <div className="flex justify-center mt-6">
+          <button onClick={() => setPage(p => p + 1)} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm" data-testid="load-more">
+            Load More
+          </button>
+        </div>}
     </div>;
 }
