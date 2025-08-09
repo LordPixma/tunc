@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, CalendarIcon, UsersIcon, FilterIcon, PlusIcon, LockIcon, ImageIcon, MusicIcon, FileTextIcon } from 'lucide-react';
+import { apiFetch } from '../api';
 export function Timeline() {
   const { id } = useParams<{ id: string }>();
   const [filter, setFilter] = useState<string>('all');
@@ -12,8 +13,7 @@ export function Timeline() {
     const fetchTimeline = async () => {
       try {
         setError(null);
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-        const res = await fetch(`${baseUrl}/capsule/${id}`);
+        const res = await apiFetch(`/capsule/${id}`);
         if (!res.ok) throw new Error('Failed to load timeline');
         const data = await res.json();
         setEvent(data);
