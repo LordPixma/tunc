@@ -5,6 +5,11 @@ compatibility_flags = ["nodejs_compat"]
 
 account_id = "1e54c42267499cd9093c467c8b5517d1"
 
+[vars]
+ALLOWED_ORIGINS = "https://example.com"
+MAX_UPLOAD_SIZE = "10485760"
+SLACK_CHANNEL = "#general"
+
 [workers.notify]
 main = "src/notify.ts"
 
