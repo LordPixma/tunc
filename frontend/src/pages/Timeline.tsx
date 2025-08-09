@@ -2,28 +2,63 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, CalendarIcon, UsersIcon, FilterIcon, PlusIcon, LockIcon, ImageIcon, MusicIcon, FileTextIcon } from 'lucide-react';
 export function Timeline() {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const [filter, setFilter] = useState<string>('all');
   const [event, setEvent] = useState<any | null>(null);
   const [timelineItems, setTimelineItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  const fetchTimeline = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      const res = await fetch(`/capsule/${id}`);
+      if (!res.ok) throw new Error('Failed to load timeline');
+      const data = await res.json();
+      setEvent(data);
+      setTimelineItems(Array.isArray(data) ? data : data.items || []);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTimeline = async () => {
-      try {
-        setError(null);
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-        const res = await fetch(`${baseUrl}/capsule/${id}`);
-        if (!res.ok) throw new Error('Failed to load timeline');
-        const data = await res.json();
-        setEvent(data);
-        setTimelineItems(Array.isArray(data) ? data : data.items || []);
-      } catch (err: any) {
-        setError(err.message || 'An error occurred');
-      }
-    };
     fetchTimeline();
   }, [id]);
+
+  const handleAddContent = async () => {
+    const message = prompt('Enter content');
+    if (!message) return;
+    try {
+      setAdding(true);
+      await fetch(`/capsule/${id}/item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      await fetchTimeline();
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const filteredItems = timelineItems.filter(item => {
+    if (filter === 'all') return true;
+    return item.author?.name?.toLowerCase().includes(filter);
+  });
+  if (loading) {
+    return <div className="p-6">Loading...</div>;
+  }
   if (error) {
     return <div className="p-6 text-red-500">{error}</div>;
   }
@@ -61,9 +96,11 @@ export function Timeline() {
       {/* Collaborator Avatars */}
       <div className="flex items-center mb-6">
         <div className="flex -space-x-2 mr-4">
-          {event?.collaborators?.slice(0, 5).map(collaborator => <div key={collaborator.id} className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 overflow-hidden">
+          {event?.collaborators?.slice(0, 5).map(collaborator => (
+            <div key={collaborator.id} className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 overflow-hidden">
               <img src={collaborator.avatar} alt={collaborator.name} className="w-full h-full object-cover" />
-            </div>)}
+            </div>
+          ))}
         </div>
         <button className="text-teal-600 dark:text-teal-400 font-medium text-sm">
           Manage Collaborators
@@ -84,14 +121,18 @@ export function Timeline() {
             <option value="miguel">Miguel's Content</option>
           </select>
         </div>
-        <button className="flex items-center bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+        <button
+          onClick={handleAddContent}
+          disabled={adding}
+          className="flex items-center bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+        >
           <PlusIcon className="w-4 h-4 mr-2" />
-          Add Content
+          {adding ? 'Adding...' : 'Add Content'}
         </button>
       </div>
       {/* Timeline */}
       <div className="space-y-6">
-        {timelineItems.map(item => <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        {filteredItems.map(item => <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
             {/* Item Header */}
             <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-700">
               <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
