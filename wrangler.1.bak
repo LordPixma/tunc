@@ -1,3 +1,0 @@
-toml
-[[queues.consumers]]
-queue = "tunc_notify"
