@@ -75,7 +75,7 @@ const routes: Record<string, Record<string, RouteHandler>> = {
 
 // Basic CORS handling (you might need a more robust solution)
 function addCorsHeaders(response: Response): Response {
-  response.headers.set('Access-Control-Allow-Origin', '* '); // Replace with allowed origins
+  response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, X-API-Token');
   return response;
