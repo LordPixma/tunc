@@ -43,6 +43,13 @@ class MemoryDB {
   }
 }
 
+describe('createJWT', () => {
+  it('returns a token with three parts', async () => {
+    const token = await createJWT({ sub: 'alice' }, 'secret');
+    expect(token.split('.')).toHaveLength(3);
+  });
+});
+
 describe('Worker endpoints', () => {
   it('creates a capsule', async () => {
     const db = {
