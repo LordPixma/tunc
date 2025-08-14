@@ -8,6 +8,20 @@ interface Env {
 
 const MAX_ATTEMPTS = 3;
 
+async function sendToDlq(message: any, env: Env, error: unknown): Promise<void> {
+  const err = error instanceof Error ? error.message : String(error);
+  console.error('Moving message to dead-letter queue', {
+    body: message.body,
+    attempts: message.attempts ?? 0,
+    error: err,
+  });
+  await env.NOTIFY_DLQ.send({
+    originalBody: message.body,
+    attempts: message.attempts ?? 0,
+    error: err,
+  });
+}
+
 interface ExportedHandler<Env> {
   queue?(batch: MessageBatch<any>, env: Env, ctx: ExecutionContext): Promise<void>;
 }
@@ -15,12 +29,13 @@ interface ExportedHandler<Env> {
 const worker: ExportedHandler<Env> = {
   async queue(batch: MessageBatch<any>, env: Env, ctx: ExecutionContext): Promise<void> {
     if (!env.NOTIFY_DLQ) {
-      throw new Error('NOTIFY_DLQ queue binding is missing');
+      console.error('NOTIFY_DLQ queue binding is missing');
+      return;
     }
     if (!env.SLACK_WEBHOOK_URL) {
       console.error('SLACK_WEBHOOK_URL is not set; moving messages to dead-letter queue');
       for (const message of batch.messages) {
-        await env.NOTIFY_DLQ.send(message.body);
+        await sendToDlq(message, env, 'missing webhook URL');
       }
       return;
     }
@@ -40,8 +55,7 @@ const worker: ExportedHandler<Env> = {
         } catch (err) {
           console.error('Failed to process notification', err);
           if ((message.attempts ?? 0) >= MAX_ATTEMPTS) {
-            console.error('Moving message to dead-letter queue');
-            await env.NOTIFY_DLQ.send(message.body);
+            await sendToDlq(message, env, err);
           } else {
             message.retry();
           }
