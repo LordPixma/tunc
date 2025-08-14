@@ -61,7 +61,6 @@ queue = "tunc-notify-production"
 
 [[env.production.queues.consumers]]
 queue = "tunc-notify-production" 
-script_name = "notify"
 
 [[env.production.r2_buckets]]
 binding = "MEDIA_BUCKET"
