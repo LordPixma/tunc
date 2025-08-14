@@ -27,6 +27,10 @@ new_classes = [ "TimelineDO" ]
 binding = "NOTIFY_QUEUE"
 queue = "tunc_notify"
 
+[[queues.producers]]
+binding = "NOTIFY_DLQ"
+queue = "tunc_notify_dlq"
+
 [[queues.consumers]]
 queue = "tunc_notify"
 
@@ -54,10 +58,14 @@ database_id = "315bf476-04e5-401a-af8f-8eefc1b8a8dc"
 
 [[env.production.queues.producers]]
 binding = "NOTIFY_QUEUE"
-queue = "tunc-notify-production" 
+queue = "tunc-notify-production"
+
+[[env.production.queues.producers]]
+binding = "NOTIFY_DLQ"
+queue = "tunc-notify-dlq-production"
 
 [[env.production.queues.consumers]]
-queue = "tunc-notify-production" 
+queue = "tunc-notify-production"
 
 [[env.production.r2_buckets]]
 binding = "MEDIA_BUCKET"
