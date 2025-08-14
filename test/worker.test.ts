@@ -195,7 +195,7 @@ describe('Worker endpoints', () => {
     const res = await worker.fetch(req, env, {} as any);
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data.error).toBe('name is required');
+ expect(data.error).toBe('Request body must contain only the "name" field');
     expect(db.prepare).not.toHaveBeenCalled();
   });
 });
