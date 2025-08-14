@@ -251,4 +251,6 @@ const worker = {
 };
 
 export default worker;
+export const fetch = worker.fetch;
+export const queue = worker.queue;
 export { handleCreateCapsule, handleUpload };
