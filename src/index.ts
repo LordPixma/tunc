@@ -251,3 +251,4 @@ const worker = {
 };
 
 export default worker;
+export { createJWT, handleCreateCapsule, handleUpload };
