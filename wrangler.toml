@@ -36,6 +36,10 @@ bucket_name = "tunc-media"
 preview_bucket_name = "tunc-media-preview"
 
 [env.production]
+[env.production.workers.notify]
+main = "src/notify.ts"
+
+
 [env.production.vars]
 ALLOWED_ORIGINS = "https://example.com" # Replace with production value if different
 MAX_UPLOAD_SIZE = "10485760" # Replace with production value if different
