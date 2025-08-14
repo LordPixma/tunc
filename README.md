@@ -37,6 +37,17 @@ Tunc is a serverless multimedia event platform built entirely on the Cloudflare 
    # optional: deploy the front‑end built from magicpatterns (see /ui directory when exported)
    ```
 
+### Configuration
+
+The Worker expects a few environment variables to be configured in `wrangler.toml` or your deployment environment:
+
+| Variable | Purpose |
+|----------|---------|
+| `API_TOKEN` | Bearer token required for all API requests. |
+| `ALLOWED_ORIGINS` | Comma‑separated list of origins permitted for CORS requests. |
+
+Preflight `OPTIONS` requests will respond with `GET, POST, DELETE, OPTIONS` methods and allow the headers `Content-Type`, `Authorization`, `X-Capsule-ID`, and `X-Requested-With`.
+
 ## API Routes
 
 The Worker exposes a small REST API:

@@ -60,11 +60,13 @@ describe('Worker endpoints', () => {
         get: vi.fn().mockReturnValue({ fetch: doFetch }),
       },
       API_TOKEN: 'token',
+      ALLOWED_ORIGINS: 'https://example.com',
     };
     const req = new Request('https://example.com/capsule', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer token',
+        'Origin': 'https://example.com',
       },
       body: JSON.stringify({ name: 'My Event' }),
     });
@@ -74,7 +76,7 @@ describe('Worker endpoints', () => {
     expect(data.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(db.prepare).toHaveBeenCalled();
     expect(doFetch).toHaveBeenCalled();
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
   });
 
   it('rejects overly long capsule names', async () => {
@@ -107,6 +109,7 @@ describe('Worker endpoints', () => {
       TIMELINE_DO: {},
       NOTIFY_QUEUE: {},
       API_TOKEN: 'token',
+      ALLOWED_ORIGINS: 'https://example.com',
     };
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
     const body = new Uint8Array([1, 2, 3]);
@@ -116,6 +119,7 @@ describe('Worker endpoints', () => {
         'content-type': 'image/png',
         'content-length': String(body.length),
         'Authorization': 'Bearer token',
+        'Origin': 'https://example.com',
       },
       body,
     });
@@ -124,7 +128,7 @@ describe('Worker endpoints', () => {
     const data = await res.json();
     expect(data.url.startsWith(`https://bucket.r2.dev/${capsuleId}/`)).toBe(true);
     expect(put).toHaveBeenCalled();
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
   });
 
   it('rejects unauthorized requests', async () => {
@@ -169,7 +173,13 @@ describe('Worker endpoints', () => {
 describe('Timeline Durable Object', () => {
   it('adds and retrieves items with attachments', async () => {
     const db = new MemoryDB();
-    const env: any = { DB: db, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
+    const env: any = {
+      DB: db,
+      MEDIA_BUCKET: {},
+      NOTIFY_QUEUE: {},
+      API_TOKEN: 'token',
+      ALLOWED_ORIGINS: 'https://example.com',
+    };
     const timeline = new TimelineDO({} as any, env);
     const capsuleId = '123e4567-e89b-12d3-a456-426614174000';
     const attachmentId = '11111111-1111-4111-8111-111111111111';
@@ -179,6 +189,7 @@ describe('Timeline Durable Object', () => {
       headers: {
         'X-Capsule-ID': capsuleId,
         'Authorization': 'Bearer token',
+        'Origin': 'https://example.com',
       },
       body: JSON.stringify({
         message: 'hello',
@@ -187,13 +198,14 @@ describe('Timeline Durable Object', () => {
     });
     const addRes = await timeline.fetch(addReq);
     expect(addRes.status).toBe(201);
-    expect(addRes.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(addRes.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
 
     const getReq = new Request('https://example.com/', {
       method: 'GET',
       headers: {
         'X-Capsule-ID': capsuleId,
         'Authorization': 'Bearer token',
+        'Origin': 'https://example.com',
       },
     });
     const getRes = await timeline.fetch(getReq);
@@ -201,16 +213,18 @@ describe('Timeline Durable Object', () => {
     const items = await getRes.json();
     expect(items).toHaveLength(1);
     expect(items[0].message).toBe('hello');
-    expect(getRes.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(getRes.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
     expect(items[0].attachments).toEqual([`${capsuleId}/${attachmentId}`]);
   });
 
   it('handles OPTIONS requests with CORS headers', async () => {
-    const env: any = { DB: {}, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token' };
+    const env: any = { DB: {}, MEDIA_BUCKET: {}, NOTIFY_QUEUE: {}, API_TOKEN: 'token', ALLOWED_ORIGINS: 'https://example.com' };
     const timeline = new TimelineDO({} as any, env);
-    const res = await timeline.fetch(new Request('https://example.com/', { method: 'OPTIONS' }));
+    const res = await timeline.fetch(
+      new Request('https://example.com/', { method: 'OPTIONS', headers: { Origin: 'https://example.com' } })
+    );
     expect(res.status).toBe(204);
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
   });
 
   it('rejects attachments referencing other capsules', async () => {
@@ -264,14 +278,18 @@ describe('CORS', () => {
       DB: {},
       NOTIFY_QUEUE: {},
       API_TOKEN: 'token',
+      ALLOWED_ORIGINS: 'https://example.com',
     };
     const res = await worker.fetch(
-      new Request('https://example.com/capsule', { method: 'OPTIONS' }),
+      new Request('https://example.com/capsule', {
+        method: 'OPTIONS',
+        headers: { Origin: 'https://example.com' },
+      }),
       env,
       {} as any
     );
     expect(res.status).toBe(204);
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
   });
 
   it('returns 404 when deleting a non-existent item', async () => {
