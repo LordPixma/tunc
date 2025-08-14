@@ -53,10 +53,10 @@ database_id = "your-production-db-id" # Replace with production DB ID
 
 [[env.production.queues.producers]]
 binding = "NOTIFY_QUEUE"
-queue = "tunc_notify_production" # Replace with production queue name
+queue = "tunc-notify-production" # Replace with production queue name
 
 [[env.production.queues.consumers]]
-queue = "tunc_notify_production" # Replace with production queue name
+queue = "tunc-notify-production" # Replace with production queue name
 
 [[env.production.r2_buckets]]
 binding = "MEDIA_BUCKET"
