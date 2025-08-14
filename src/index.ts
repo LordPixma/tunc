@@ -1,19 +1,12 @@
 // Cloudflare Worker entrypoint for Tunc serverless event platform
 
-import { IncomingRequestCfProperties, MessageBatch, ExecutionContext } from '@cloudflare/workers-types';
-import { IncomingWebhook } from '@slack/webhook'; // Assuming you have this installed
+import { MessageBatch, ExecutionContext, D1Database } from '@cloudflare/workers-types';
 
 import notifyWorker from './notify';
 
 interface Env {
   API_TOKEN: string;
   DB: D1Database;
-  NOTIFY_QUEUE: Queue;
-  NOTIFY_DLQ: Queue; // Assuming a Dead Letter Queue binding
-  MEDIA_BUCKET: R2Bucket; // Assuming an R2 bucket binding
-  SLACK_WEBHOOK_URL?: string; // Assuming an optional Slack webhook URL
-  ALLOWED_ORIGINS?: string; // Assuming allowed origins for CORS
-  MAX_UPLOAD_SIZE?: string; // Assuming max upload size for file uploads
 }
 
 // Define a simple router (you might have a more sophisticated one)
