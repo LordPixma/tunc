@@ -16,3 +16,13 @@ CREATE TABLE IF NOT EXISTS items (
   opening_date DATETIME,
   FOREIGN KEY (capsule_id) REFERENCES capsules(id)
 );
+
+-- Table storing generic timeline events for analytics or logging.
+CREATE TABLE IF NOT EXISTS timeline_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  timestamp DATETIME NOT NULL,
+  value TEXT,
+  type TEXT,
+  details TEXT
+);
