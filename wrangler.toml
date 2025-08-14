@@ -1,3 +1,4 @@
+toml
 name = "tunc"
 main = "src/index.ts"
 compatibility_date = "2025-08-05"
@@ -29,7 +30,6 @@ queue = "tunc_notify"
 
 [[queues.consumers]]
 queue = "tunc_notify"
-script_name = "notify"
 
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
@@ -37,3 +37,29 @@ bucket_name = "tunc-media"
 preview_bucket_name = "tunc-media-preview"
 
 [env.production]
+[env.production.vars]
+ALLOWED_ORIGINS = "https://example.com" # Replace with production value if different
+MAX_UPLOAD_SIZE = "10485760" # Replace with production value if different
+SLACK_CHANNEL = "#general" # Replace with production value if different
+
+[env.production.durable_objects]
+bindings = [
+  { name = "TIMELINE_DO", class_name = "TimelineDO" }
+]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "tunc_db_production" # Replace with production DB name
+database_id = "your-production-db-id" # Replace with production DB ID
+
+[[env.production.queues.producers]]
+binding = "NOTIFY_QUEUE"
+queue = "tunc_notify_production" # Replace with production queue name
+
+[[env.production.queues.consumers]]
+queue = "tunc_notify_production" # Replace with production queue name
+
+[[env.production.r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "tunc-media-production" # Replace with production bucket name
+preview_bucket_name = "tunc-media-preview-production" # Replace with production preview bucket name

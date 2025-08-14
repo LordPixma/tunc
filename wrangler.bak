@@ -2,7 +2,6 @@ name = "tunc"
 main = "src/index.ts"
 compatibility_date = "2025-08-05"
 compatibility_flags = ["nodejs_compat"]
-
 account_id = "1e54c42267499cd9093c467c8b5517d1"
 
 [vars]
@@ -20,7 +19,9 @@ bindings = [
   { name = "TIMELINE_DO", class_name = "TimelineDO" }
 ]
 
-
+[[migrations]]
+tag = "v1"
+new_classes = [ "TimelineDO" ]
 
 [[queues.producers]]
 binding = "NOTIFY_QUEUE"
@@ -30,15 +31,9 @@ queue = "tunc_notify"
 queue = "tunc_notify"
 script_name = "notify"
 
-[[queues.producers]]
-binding = "NOTIFY_DLQ"
-queue = "tunc_notify_dlq"
-
-[[migrations]]
-tag = "v1"
-new_classes = [ "TimelineDO" ]
-
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
 bucket_name = "tunc-media"
 preview_bucket_name = "tunc-media-preview"
+
+[env.production]
