@@ -19,9 +19,9 @@ Tunc is a serverless multimedia event platform built entirely on the Cloudflare 
 
    ```bash
    API_TOKEN="replace-with-strong-secret"
-   VITE_API_BASE_URL="http://localhost:8787"
    ```
 
+   This worker also expects a D1 database binding named `DB` configured in `wrangler.toml`.
    Store secrets in Cloudflare with `wrangler secret put API_TOKEN` and never commit them to version control.
 4. Create a D1 database for your environment:
 
