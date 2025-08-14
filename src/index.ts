@@ -3,6 +3,8 @@
 // This worker delegates stateful operations to a Durable Object defined in src/timeline.ts
 
 import type {
+  ExportedHandler,
+  MessageBatch,
   DurableObjectNamespace,
   R2Bucket,
   D1Database,
@@ -11,6 +13,8 @@ import type {
 } from '@cloudflare/workers-types';
 
 export { TimelineDO } from "./timeline";
+
+import notifyWorker from './notify';
 
 interface Env {
   TIMELINE_DO: DurableObjectNamespace;
