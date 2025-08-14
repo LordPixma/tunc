@@ -388,4 +388,15 @@ export default {
     console.warn(`Route not found: ${req.method} ${req.url}`);
     return addCorsHeaders(new Response('Not Found', { status: 404 }));
   }
+
+  async queue(batch: MessageBatch, env: Env, ctx: ExecutionContext): Promise<void> {
+    // delegate processing to notify.ts
+    if (typeof notifyWorker.queue === 'function') {
+      // Cast to any because the types might not align perfectly between index.ts and notify.ts due to separate compilation
+      return notifyWorker.queue(batch as any, env as any, ctx);
+    }
+    // fallback: log and drop messages if handler isn’t defined
+    console.error('Notify worker does not implement a queue handler');
+    // Optionally, you could acknowledge the messages or send them to a DLQ here
+  }
 };
