@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import worker, { createJWT } from '../src/index';
+import worker, { createJWT } from '../src/index.t_.bak';
 import { TimelineDO } from '../src/timeline';
 
 // Simple in-memory DB mock used by TimelineDO tests
