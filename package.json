@@ -7,7 +7,7 @@
     "@slack/webhook": "^7.0.5"
   },
   "scripts": {
-    "test": "vitest run --exclude \"frontend/**\" && npm --prefix frontend test"
+    "test": "vitest run --exclude \"ui/**\" && npm --prefix ui test"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250806.0",
