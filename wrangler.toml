@@ -48,15 +48,15 @@ bindings = [
 
 [[env.production.d1_databases]]
 binding = "DB"
-database_name = "tunc_db_production" # Replace with production DB name
-database_id = "your-production-db-id" # Replace with production DB ID
+database_name = "tunc-db" 
+database_id = "315bf476-04e5-401a-af8f-8eefc1b8a8dc" 
 
 [[env.production.queues.producers]]
 binding = "NOTIFY_QUEUE"
-queue = "tunc-notify-production" # Replace with production queue name
+queue = "tunc-notify-production" 
 
 [[env.production.queues.consumers]]
-queue = "tunc-notify-production" # Replace with production queue name
+queue = "tunc-notify-production" 
 
 [[env.production.r2_buckets]]
 binding = "MEDIA_BUCKET"
