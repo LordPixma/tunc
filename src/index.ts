@@ -215,8 +215,6 @@ async function handleUpload(req: Request, env: Env, capsuleId: string): Promise<
 // ---------------------------------------------------------------------------
 
 const worker = {
-  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-const worker = {
   async fetch(
     req: Request,
     env: Env,
