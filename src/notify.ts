@@ -8,7 +8,11 @@ interface Env {
 
 const MAX_ATTEMPTS = 3;
 
-export default {
+interface ExportedHandler<Env> {
+  queue?(batch: MessageBatch<any>, env: Env, ctx: ExecutionContext): Promise<void>;
+}
+
+const worker: ExportedHandler<Env> = {
   async queue(batch: MessageBatch<any>, env: Env, ctx: ExecutionContext): Promise<void> {
     if (!env.NOTIFY_DLQ) {
       throw new Error('NOTIFY_DLQ queue binding is missing');
@@ -49,3 +53,5 @@ export default {
     ctx.waitUntil(Promise.all(promises));
   }
 };
+
+export default worker;
