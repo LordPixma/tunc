@@ -91,7 +91,7 @@ interface TimelineEvent {
   details?: any;
 }
 
-export default {
+const worker = {
   async fetch(
     req: Request,
     env: Env,
@@ -128,3 +128,5 @@ export default {
     // Optionally, you could acknowledge the messages or send them to a DLQ here
   }
 };
+
+export default worker;
