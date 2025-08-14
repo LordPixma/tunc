@@ -19,10 +19,11 @@ Tunc is a serverless multimedia event platform built entirely on the Cloudflare 
 
    ```bash
    API_TOKEN="replace-with-strong-secret"
+   SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
    VITE_API_BASE_URL="http://localhost:8787"
    ```
 
-   Store secrets in Cloudflare with `wrangler secret put API_TOKEN` and never commit them to version control.
+   Store secrets in Cloudflare with `wrangler secret put API_TOKEN` and `wrangler secret put SLACK_WEBHOOK_URL` and never commit them to version control.
 4. Create a D1 database for your environment:
 
    ```bash
@@ -50,6 +51,13 @@ Tunc is a serverless multimedia event platform built entirely on the Cloudflare 
    ```bash
    wrangler deploy
    ```
+
+### Required environment variables
+
+The worker requires the following variables to be set:
+
+- `API_TOKEN` – token used to authorize API requests.
+- `SLACK_WEBHOOK_URL` – Slack incoming webhook used by the notification queue.
 
 ## API Endpoints
 
