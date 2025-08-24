@@ -2,14 +2,17 @@ import type {
   D1Database,
   R2Bucket,
   Queue,
-  DurableObjectState
+  DurableObjectState,
+  DurableObjectNamespace
 } from '@cloudflare/workers-types';
 
 export interface Env {
   DB: D1Database;
-  MEDIA_BUCKET: R2Bucket;
-  NOTIFY_QUEUE: Queue<any>;
-  API_TOKEN: string;
+  MEDIA_BUCKET: R2Bucket & { bucketName?: string };
+  NOTIFY_QUEUE: Queue;
+  TIMELINE_DO: DurableObjectNamespace;
+  API_TOKEN: string; // used by durable object tests
+  JWT_SECRET: string;
 }
 
 interface TimelineItem {
@@ -17,6 +20,14 @@ interface TimelineItem {
   message: string;
   openingDate?: string;
   attachments?: string[];
+  created_at: string;
+}
+
+interface TimelineItemRow {
+  id: string;
+  message: string;
+  attachments: string | null;
+  openingDate: string | null;
   created_at: string;
 }
 
@@ -41,6 +52,14 @@ function errorResponse(message: string, status: number = 400): Response {
   return jsonResponse({ error: message }, status);
 }
 
+function sanitizeMessage(message: string): string {
+  // Basic XSS prevention - remove potential script tags and HTML
+  return message
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .trim();
+}
+
 function isValidDate(date: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(Date.parse(date));
 }
@@ -48,6 +67,7 @@ function isValidDate(date: string): boolean {
 const MAX_MESSAGE_LENGTH = 1000;
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_LENGTH = 2048;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isValidAttachment(ref: string, capsuleId: string): boolean {
   try {
@@ -99,8 +119,14 @@ export class TimelineDO {
 
     // Handle adding a new item to the timeline
     if (request.method === "POST" && pathname === "/item") {
-      const data = await request.json().catch(() => ({}));
-      const message: string = (data.message ?? '').trim();
+      let data: any = {};
+      try {
+        data = await request.json();
+      } catch (err) {
+        return errorResponse('invalid JSON in request body', 400);
+      }
+      
+      const message: string = sanitizeMessage((data.message ?? '').trim());
       const openingDate: string | undefined = data.openingDate;
       const attachments: string[] | undefined = data.attachments;
 
@@ -167,7 +193,7 @@ export class TimelineDO {
         .bind(capsuleId)
         .all();
 
-        const items = results.map((row: any) => ({
+        const items = results.map((row: TimelineItemRow) => ({
           id: row.id,
           message: row.message,
           attachments: row.attachments ? JSON.parse(row.attachments) : undefined,
@@ -186,8 +212,7 @@ export class TimelineDO {
     if (request.method === "DELETE" && pathname.startsWith("/item/")) {
       const parts = pathname.split("/");
       const itemId = parts[2];
-      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!itemId || !uuidPattern.test(itemId)) {
+      if (!itemId || !UUID_PATTERN.test(itemId)) {
         return errorResponse('invalid item id', 400);
       }
       try {
@@ -210,6 +235,6 @@ export class TimelineDO {
     }
 
     // If no route matches, return a 404 response
-    return addCorsHeaders(new Response("Not found", { status: 404 }));
+    return addCorsHeaders(new Response("not found", { status: 404 }));
   }
 }

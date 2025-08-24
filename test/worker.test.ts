@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import worker, { createJWT } from '../src/index.ts';
-import { TimelineDO } from '../src/timeline';
+import worker, { createJWT } from '../src/index.js';
+import { TimelineDO } from '../src/timeline.js';
 
 // Simple in-memory DB mock used by TimelineDO tests
 class MemoryDB {
