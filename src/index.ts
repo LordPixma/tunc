@@ -10,6 +10,7 @@ import type {
 } from '@cloudflare/workers-types';
 
 import notifyWorker from './notify';
+import { TimelineDO } from './timeline';
 
 // Node's Buffer is not available in the Workers runtime, but the tests run in
 // a Node environment where it exists. Declare it here so TypeScript does not
@@ -253,4 +254,4 @@ const worker = {
 export default worker;
 export const fetch = worker.fetch;
 export const queue = worker.queue;
-export { handleCreateCapsule, handleUpload };
+export { handleCreateCapsule, handleUpload, TimelineDO };
