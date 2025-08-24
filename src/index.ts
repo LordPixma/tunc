@@ -39,7 +39,7 @@ function base64UrlEncode(data: Uint8Array): string {
   return str.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
-function base64UrlDecode(str: string): Uint8Array {
+function base64UrlDecode(str: string): ArrayBuffer {
   str = str.replace(/-/g, '+').replace(/_/g, '/');
   if (str.length % 4) str += '='.repeat(4 - (str.length % 4));
   let binary: string;
@@ -50,7 +50,7 @@ function base64UrlDecode(str: string): Uint8Array {
   }
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return bytes.buffer;
 }
 
 export async function createJWT(payload: JWTPayload, secret: string): Promise<string> {
@@ -91,13 +91,16 @@ async function verifyJWT(token: string, secret: string): Promise<JWTPayload> {
     enc.encode(data)
   );
   if (!valid) throw new Error('invalid signature');
-  const payloadJson = new TextDecoder().decode(base64UrlDecode(payloadB64));
+  const payloadJson = new TextDecoder().decode(new Uint8Array(base64UrlDecode(payloadB64)));
   return JSON.parse(payloadJson);
 }
 
 // ---------------------------------------------------------------------------
 // Env definition and helpers
 // ---------------------------------------------------------------------------
+
+// Create UUID validation constant
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface Env {
   DB: D1Database;
@@ -112,6 +115,9 @@ function addCorsHeaders(res: Response): Response {
   res.headers.set('Access-Control-Allow-Origin', '*');
   res.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Add security headers for consistency
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-Frame-Options', 'DENY');
   return res;
 }
 
@@ -167,6 +173,9 @@ async function handleCreateCapsule(req: Request, env: Env): Promise<Response> {
   }
 
   const name = body.name.trim();
+  if (!name) {
+    return jsonResponse({ error: 'name is required' }, 400);
+  }
   if (name.length > 100) {
     return jsonResponse({ error: 'name must be 100 characters or fewer' }, 400);
   }
@@ -201,12 +210,24 @@ async function handleUpload(req: Request, env: Env, capsuleId: string): Promise<
     return addCorsHeaders(new Response('Unauthorized', { status: 401 }));
   }
 
+  // Validate capsuleId format
+  if (!UUID_PATTERN.test(capsuleId)) {
+    return jsonResponse({ error: 'invalid capsule id format' }, 400);
+  }
+
   const id = crypto.randomUUID();
   const key = `${capsuleId}/${id}`;
   const body = await req.arrayBuffer();
   const contentType = req.headers.get('content-type') || 'application/octet-stream';
   await env.MEDIA_BUCKET.put(key, body, { httpMetadata: { contentType } });
-  const url = `https://${env.MEDIA_BUCKET.bucketName}.r2.dev/${key}`;
+  
+  // Handle potential undefined bucketName
+  const bucketName = env.MEDIA_BUCKET.bucketName;
+  if (!bucketName) {
+    return jsonResponse({ error: 'bucket configuration error' }, 500);
+  }
+  
+  const url = `https://${bucketName}.r2.dev/${key}`;
   return jsonResponse({ url }, 201);
 }
 
@@ -236,7 +257,7 @@ const worker = {
       return handleUpload(req, env, capsuleId);
     }
 
-    return addCorsHeaders(new Response('Not Found', { status: 404 }));
+    return addCorsHeaders(new Response('not found', { status: 404 }));
   },
 
   async queue(batch: MessageBatch, env: Env, ctx: ExecutionContext): Promise<void> {
